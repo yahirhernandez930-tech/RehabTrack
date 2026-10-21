@@ -13,6 +13,7 @@ import com.rehabtrack.app.ui.screens.HistoryScreen
 import com.rehabtrack.app.ui.screens.SessionDetailScreen
 import com.rehabtrack.app.ui.screens.ProfileScreen
 import com.rehabtrack.app.ui.screens.ChangeEmailScreen
+import com.rehabtrack.app.ui.screens.ChangePasswordScreen
 
 @Composable
 fun AppNavigation() {
@@ -54,6 +55,10 @@ fun AppNavigation() {
 
         composable(Routes.ChangeEmail.route) {
             ChangeEmailScreen(navController)
+        }
+
+        composable(Routes.ChangePassword.route) {
+            ChangePasswordScreen(navController)
         }
     }
 }

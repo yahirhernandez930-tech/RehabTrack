@@ -123,7 +123,7 @@ fun ProfileScreen(navController: NavController) {
                 ProfileActionButton(
                     text = "Cambiar contraseña",
                     onClick = {
-                        // Pendiente de implementar
+                        navController.navigate(Routes.ChangePassword.route)
                     }
                 )
 
