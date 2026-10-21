@@ -14,6 +14,9 @@ import com.rehabtrack.app.ui.screens.SessionDetailScreen
 import com.rehabtrack.app.ui.screens.ProfileScreen
 import com.rehabtrack.app.ui.screens.ChangeEmailScreen
 import com.rehabtrack.app.ui.screens.ChangePasswordScreen
+import com.rehabtrack.app.ui.screens.NextSessionScreen
+import com.rehabtrack.app.ui.screens.SessionConfirmationScreen
+import com.rehabtrack.app.ui.screens.ExerciseInfoScreen
 
 @Composable
 fun AppNavigation() {
@@ -59,6 +62,18 @@ fun AppNavigation() {
 
         composable(Routes.ChangePassword.route) {
             ChangePasswordScreen(navController)
+        }
+
+        composable(Routes.NextSession.route) {
+            NextSessionScreen(navController)
+        }
+
+        composable(Routes.SessionConfirmation.route) {
+            SessionConfirmationScreen(navController)
+        }
+
+        composable(Routes.ExerciseInfo.route) {
+            ExerciseInfoScreen(navController)
         }
     }
 }
