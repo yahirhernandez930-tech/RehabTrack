@@ -12,6 +12,7 @@ import com.rehabtrack.app.ui.screens.ProgressScreen
 import com.rehabtrack.app.ui.screens.HistoryScreen
 import com.rehabtrack.app.ui.screens.SessionDetailScreen
 import com.rehabtrack.app.ui.screens.ProfileScreen
+import com.rehabtrack.app.ui.screens.ChangeEmailScreen
 
 @Composable
 fun AppNavigation() {
@@ -49,6 +50,10 @@ fun AppNavigation() {
 
         composable(Routes.Profile.route) {
             ProfileScreen(navController)
+        }
+
+        composable(Routes.ChangeEmail.route) {
+            ChangeEmailScreen(navController)
         }
     }
 }

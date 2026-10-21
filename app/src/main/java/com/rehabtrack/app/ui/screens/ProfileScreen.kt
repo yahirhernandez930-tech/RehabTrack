@@ -114,7 +114,7 @@ fun ProfileScreen(navController: NavController) {
                 ProfileActionButton(
                     text = "Cambiar correo",
                     onClick = {
-                        // Pendiente de implementar
+                        navController.navigate(Routes.ChangeEmail.route)
                     }
                 )
 
