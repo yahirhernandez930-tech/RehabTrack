@@ -1,7 +1,5 @@
-
 package com.rehabtrack.app.ui.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.ui.graphics.Color
+import com.rehabtrack.app.navigation.Routes
 
 @Composable
 fun ExerciseInfoScreen(navController: NavController) {
@@ -217,7 +216,7 @@ fun ExerciseInfoScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        // Se conectará a la pantalla de ejecución.
+                        navController.navigate(Routes.Exercise.route)
                     },
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)

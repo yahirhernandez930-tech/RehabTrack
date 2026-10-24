@@ -1,6 +1,5 @@
 package com.rehabtrack.app.navigation
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,6 +13,8 @@ import com.rehabtrack.app.ui.screens.SessionDetailScreen
 import com.rehabtrack.app.ui.screens.ProfileScreen
 import com.rehabtrack.app.ui.screens.ChangeEmailScreen
 import com.rehabtrack.app.ui.screens.ChangePasswordScreen
+import com.rehabtrack.app.ui.screens.ExerciseConfirmationScreen
+import com.rehabtrack.app.ui.screens.ExerciseExecutionScreen
 import com.rehabtrack.app.ui.screens.NextSessionScreen
 import com.rehabtrack.app.ui.screens.SessionConfirmationScreen
 import com.rehabtrack.app.ui.screens.ExerciseInfoScreen
@@ -74,6 +75,25 @@ fun AppNavigation() {
 
         composable(Routes.ExerciseInfo.route) {
             ExerciseInfoScreen(navController)
+        }
+
+        composable(Routes.Exercise.route) {
+            ExerciseExecutionScreen(navController)
+        }
+
+        composable(Routes.ExerciseConfirmation.route) {
+            ExerciseConfirmationScreen(
+                navController = navController,
+                onContinue = {
+                    navController.navigate(Routes.ExerciseInfo.route)
+                },
+                onExit = {
+                    navController.popBackStack(
+                        Routes.NextSession.route,
+                        inclusive = false
+                    )
+                }
+            )
         }
     }
 }
