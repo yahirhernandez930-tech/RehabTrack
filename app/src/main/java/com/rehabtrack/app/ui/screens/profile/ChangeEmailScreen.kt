@@ -1,6 +1,8 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.profile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -20,20 +23,26 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.rehabtrack.app.navigation.Routes
 
 @Composable
-fun SessionCompletionScreen(navController: NavController) {
+fun ChangeEmailScreen(navController: NavController) {
     val colors = MaterialTheme.colorScheme
+    var newEmail by remember { mutableStateOf("") }
 
     Scaffold(
         containerColor = colors.background,
@@ -45,7 +54,7 @@ fun SessionCompletionScreen(navController: NavController) {
                 .padding(innerPadding)
                 .background(colors.background)
         ) {
-            // Encabezado
+            // Barra superior
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -55,12 +64,7 @@ fun SessionCompletionScreen(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = {
-                        navController.popBackStack(
-                            Routes.Home.route,
-                            inclusive = false
-                        )
-                    }
+                    onClick = { navController.popBackStack() }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -69,77 +73,94 @@ fun SessionCompletionScreen(navController: NavController) {
                     )
                 }
 
-                Text(
-                    text = "Confirmación final de sesión",
+                Box(
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1
-                )
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Cambiar correo",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colors.onPrimary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
 
+                // Equilibra el espacio ocupado por la flecha
                 Spacer(modifier = Modifier.width(48.dp))
             }
 
-            // Contenido
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(horizontal = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(100.dp))
-
-                Text(
-                    text = "¡Sesión completada!",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Sesión 8",
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = "Correo actual",
+                    style = MaterialTheme.typography.titleLarge,
                     color = colors.onBackground,
-                    textAlign = TextAlign.Center
+                    fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(26.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Has completado todos los ejercicios de la sesión",
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = "mario@gmail.com",
+                    style = MaterialTheme.typography.titleMedium,
                     color = colors.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    fontWeight = FontWeight.SemiBold
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(36.dp))
+
+                OutlinedTextField(
+                    value = newEmail,
+                    onValueChange = { newEmail = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Nuevo correo") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(38.dp))
 
                 Button(
                     onClick = {
-                        navController.popBackStack(
-                            com.rehabtrack.app.navigation.Routes.Home.route,
-                            inclusive = false
-                        )
+                        // La actualización real se conectará después.
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.68f)
-                        .height(48.dp),
+                        .height(44.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colors.primary
                     )
                 ) {
-                    Text(
-                        text = "Finalizar",
-                        fontWeight = FontWeight.Medium
+                    Text("Guardar cambios")
+                }
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                OutlinedButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier
+                        .fillMaxWidth(0.68f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = colors.primary
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        colors.primary
                     )
+                ) {
+                    Text("Cancelar")
                 }
             }
         }

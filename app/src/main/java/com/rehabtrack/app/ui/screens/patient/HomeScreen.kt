@@ -1,4 +1,4 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.patient
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

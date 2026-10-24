@@ -1,4 +1,4 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.patient
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,6 +51,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlin.math.roundToInt
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.PaddingValues
 import com.rehabtrack.app.navigation.Routes
 
 private val RehabBlueLight = Color(0xFFE3F2FD)
@@ -185,7 +186,7 @@ fun ExerciseExecutionScreen(navController: NavController) {
                                             .fillMaxWidth()
                                             .height(34.dp),
                                         contentPadding =
-                                            androidx.compose.foundation.layout.PaddingValues(
+                                            PaddingValues(
                                                 horizontal = 4.dp
                                             ),
                                         shape = RoundedCornerShape(12.dp),

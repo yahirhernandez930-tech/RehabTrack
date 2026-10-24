@@ -1,5 +1,6 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.patient
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,7 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.foundation.layout.navigationBarsPadding
-import com.rehabtrack.app.navigation.Routes
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun NextSessionScreen(
@@ -105,7 +107,7 @@ fun NextSessionScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     color = colors.onBackground,
                     fontWeight = FontWeight.Bold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -116,7 +118,7 @@ fun NextSessionScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = colors.onBackground,
                     fontWeight = FontWeight.Medium,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -126,7 +128,7 @@ fun NextSessionScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = androidx.compose.ui.graphics.Color(0xFFE3F2FD)
+                        containerColor = Color(0xFFE3F2FD)
                     )
                 ) {
                     Column(
@@ -236,7 +238,7 @@ private fun ExercisePreviewCard(
         colors = CardDefaults.cardColors(
             containerColor = colors.surface
         ),
-        border = androidx.compose.foundation.BorderStroke(
+        border = BorderStroke(
             1.dp,
             colors.outline
         )

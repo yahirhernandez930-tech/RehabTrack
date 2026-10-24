@@ -1,4 +1,4 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.auth
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +26,7 @@ import androidx.navigation.NavController
 import com.rehabtrack.app.ui.components.RehabTextField
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
+import com.rehabtrack.app.navigation.Routes
 
 @Composable
 fun LoginScreen(
@@ -117,10 +118,10 @@ fun LoginScreen(
 
                 if (!emailError && !passwordError) {
                     navController.navigate(
-                        com.rehabtrack.app.navigation.Routes.Home.route
+                        Routes.Home.route
                     ) {
                         popUpTo(
-                            com.rehabtrack.app.navigation.Routes.Login.route
+                            Routes.Login.route
                         ) {
                             inclusive = true
                         }

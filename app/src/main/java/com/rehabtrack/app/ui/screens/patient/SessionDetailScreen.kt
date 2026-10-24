@@ -1,5 +1,6 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.patient
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,13 @@ import androidx.navigation.NavController
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 
 private data class CompletedExercise(
     val name: String,
@@ -279,7 +287,7 @@ private fun EvidencePlaceholder() {
             ),
         contentAlignment = Alignment.Center
     ) {
-        androidx.compose.foundation.Canvas(
+        Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
             val stroke = 2.5.dp.toPx()
@@ -291,31 +299,31 @@ private fun EvidencePlaceholder() {
             // Marco de la imagen.
             drawRoundRect(
                 color = Color(0xFF222222),
-                topLeft = androidx.compose.ui.geometry.Offset(left, top),
-                size = androidx.compose.ui.geometry.Size(
+                topLeft = Offset(left, top),
+                size = Size(
                     right - left,
                     bottom - top
                 ),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                cornerRadius = CornerRadius(
                     14.dp.toPx(),
                     14.dp.toPx()
                 ),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
+                style = Stroke(stroke)
             )
 
             // Sol.
             drawCircle(
                 color = Color(0xFF222222),
                 radius = 9.dp.toPx(),
-                center = androidx.compose.ui.geometry.Offset(
+                center = Offset(
                     size.width * 0.31f,
                     size.height * 0.31f
                 ),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
+                style = Stroke(stroke)
             )
 
             // Montañas.
-            val mountain = androidx.compose.ui.graphics.Path().apply {
+            val mountain = Path().apply {
                 moveTo(size.width * 0.12f, size.height * 0.87f)
                 lineTo(size.width * 0.72f, size.height * 0.39f)
                 lineTo(size.width * 0.98f, size.height * 0.66f)
@@ -324,10 +332,10 @@ private fun EvidencePlaceholder() {
             drawPath(
                 path = mountain,
                 color = Color(0xFF222222),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                style = Stroke(
                     width = stroke,
-                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                    join = androidx.compose.ui.graphics.StrokeJoin.Round
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
                 )
             )
         }

@@ -1,5 +1,6 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.auth
 
+import android.util.Patterns
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -49,7 +50,7 @@ fun RegisterScreen(
                 password.any { it.isDigit() } &&
                 password.any { !it.isLetterOrDigit() }
 
-    val emailValid = android.util.Patterns.EMAIL_ADDRESS
+    val emailValid = Patterns.EMAIL_ADDRESS
         .matcher(email)
         .matches()
 

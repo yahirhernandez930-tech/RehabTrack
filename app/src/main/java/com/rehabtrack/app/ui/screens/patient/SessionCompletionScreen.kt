@@ -1,7 +1,6 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.patient
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -22,26 +20,20 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.rehabtrack.app.navigation.Routes
 
 @Composable
-fun ChangeEmailScreen(navController: NavController) {
+fun SessionCompletionScreen(navController: NavController) {
     val colors = MaterialTheme.colorScheme
-    var newEmail by remember { mutableStateOf("") }
 
     Scaffold(
         containerColor = colors.background,
@@ -53,7 +45,7 @@ fun ChangeEmailScreen(navController: NavController) {
                 .padding(innerPadding)
                 .background(colors.background)
         ) {
-            // Barra superior
+            // Encabezado
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -63,7 +55,12 @@ fun ChangeEmailScreen(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { navController.popBackStack() }
+                    onClick = {
+                        navController.popBackStack(
+                            Routes.Home.route,
+                            inclusive = false
+                        )
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -72,94 +69,77 @@ fun ChangeEmailScreen(navController: NavController) {
                     )
                 }
 
-                Box(
+                Text(
+                    text = "Confirmación final de sesión",
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Cambiar correo",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.onPrimary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.onPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
 
-                // Equilibra el espacio ocupado por la flecha
                 Spacer(modifier = Modifier.width(48.dp))
             }
 
+            // Contenido
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .padding(horizontal = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(modifier = Modifier.height(100.dp))
+
+                Text(
+                    text = "¡Sesión completada!",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = colors.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Correo actual",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = "Sesión 8",
+                    style = MaterialTheme.typography.headlineSmall,
                     color = colors.onBackground,
-                    fontWeight = FontWeight.Bold
+                    textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(26.dp))
 
                 Text(
-                    text = "mario@gmail.com",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(36.dp))
-
-                OutlinedTextField(
-                    value = newEmail,
-                    onValueChange = { newEmail = it },
+                    text = "Has completado todos los ejercicios de la sesión",
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Nuevo correo") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email
-                    )
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = colors.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(38.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 Button(
                     onClick = {
-                        // La actualización real se conectará después.
+                        navController.popBackStack(
+                            Routes.Home.route,
+                            inclusive = false
+                        )
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.68f)
-                        .height(44.dp),
+                        .height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colors.primary
                     )
                 ) {
-                    Text("Guardar cambios")
-                }
-
-                Spacer(modifier = Modifier.height(40.dp))
-
-                OutlinedButton(
-                    onClick = { navController.popBackStack() },
-                    modifier = Modifier
-                        .fillMaxWidth(0.68f)
-                        .height(44.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = colors.primary
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        colors.primary
+                    Text(
+                        text = "Finalizar",
+                        fontWeight = FontWeight.Medium
                     )
-                ) {
-                    Text("Cancelar")
                 }
             }
         }

@@ -1,18 +1,20 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.profile
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -27,46 +30,9 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.rehabtrack.app.navigation.Routes
 import com.rehabtrack.app.ui.components.PatientBottomBar
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
-
-private data class SessionHistoryItem(
-    val date: String,
-    val title: String,
-    val exercises: Int,
-    val duration: Int,
-    val painLevel: Int
-)
-
-private val sampleHistory = listOf(
-    SessionHistoryItem(
-        date = "30 septiembre 2026",
-        title = "Fortalecimiento de rodilla",
-        exercises = 3,
-        duration = 20,
-        painLevel = 3
-    ),
-    SessionHistoryItem(
-        date = "28 septiembre 2026",
-        title = "Movilidad de rodilla",
-        exercises = 4,
-        duration = 25,
-        painLevel = 4
-    ),
-    SessionHistoryItem(
-        date = "26 septiembre 2026",
-        title = "Fortalecimiento de rodilla",
-        exercises = 3,
-        duration = 20,
-        painLevel = 5
-    )
-)
 
 @Composable
-fun HistoryScreen(
-    navController: NavController
-) {
+fun ProfileScreen(navController: NavController) {
     val colors = MaterialTheme.colorScheme
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -88,7 +54,7 @@ fun HistoryScreen(
                 .verticalScroll(rememberScrollState())
                 .background(colors.background)
         ) {
-            // Encabezado
+            // Encabezado azul
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -113,7 +79,7 @@ fun HistoryScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Historial",
+                    text = "Perfil",
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.titleLarge,
                     color = colors.onBackground,
@@ -121,31 +87,55 @@ fun HistoryScreen(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                Text(
-                    text = "Sesiones recientes",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
+                ProfileData(
+                    label = "Nombre",
+                    value = "Mario"
                 )
 
-                Spacer(modifier = Modifier.height(40.dp))
+                ProfileData(
+                    label = "Apellido Paterno",
+                    value = "López"
+                )
 
-                sampleHistory.forEachIndexed { index, session ->
-                    HistorySessionItem(
-                        session = session,
-                        onViewMore = {
-                            navController.navigate(
-                                Routes.SessionDetail.route
-                            )
-                        }
-                    )
+                ProfileData(
+                    label = "Apellido Materno",
+                    value = "García"
+                )
 
-                    if (index < sampleHistory.lastIndex) {
-                        Spacer(modifier = Modifier.height(40.dp))
+                ProfileData(
+                    label = "Correo electrónico",
+                    value = "mario@gmail.com"
+                )
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                ProfileActionButton(
+                    text = "Cambiar correo",
+                    onClick = {
+                        navController.navigate(Routes.ChangeEmail.route)
                     }
-                }
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                ProfileActionButton(
+                    text = "Cambiar contraseña",
+                    onClick = {
+                        navController.navigate(Routes.ChangePassword.route)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(48.dp))
+
+                ProfileActionButton(
+                    text = "Cerrar sesión",
+                    backgroundColor = Color(0xFFD32F2F),
+                    onClick = {
+                        // Pendiente de implementar
+                    }
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -154,60 +144,57 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun HistorySessionItem(
-    session: SessionHistoryItem,
-    onViewMore: () -> Unit
+private fun ProfileData(
+    label: String,
+    value: String
 ) {
     val colors = MaterialTheme.colorScheme
 
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp)
     ) {
         Text(
-            text = session.date,
-            style = MaterialTheme.typography.bodyMedium,
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
             color = colors.onBackground,
             fontWeight = FontWeight.SemiBold
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = session.title,
+            text = value,
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onBackground,
             fontWeight = FontWeight.Medium
         )
+    }
+}
 
-        Spacer(modifier = Modifier.height(6.dp))
 
-        Text(
-            text = "${session.exercises} ejercicios · ${session.duration} min",
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onBackground
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+@Composable
+private fun ProfileActionButton(
+    text: String,
+    backgroundColor: Color = Color(0xFF1976D2),
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(0.75f),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = backgroundColor,
+                contentColor = Color.White
+            )
         ) {
             Text(
-                text = "Dolor: ${session.painLevel}/10",
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onBackground
-            )
-
-            Text(
-                text = "Ver más",
-                style = MaterialTheme.typography.labelLarge,
-                color = colors.primary,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.clickable {
-                    onViewMore()
-                }
+                text = text,
+                textAlign = TextAlign.Center
             )
         }
     }

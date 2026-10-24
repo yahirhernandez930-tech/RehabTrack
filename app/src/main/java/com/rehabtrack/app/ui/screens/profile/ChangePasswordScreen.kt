@@ -1,4 +1,4 @@
-package com.rehabtrack.app.ui.screens
+package com.rehabtrack.app.ui.screens.profile
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
