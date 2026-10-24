@@ -40,7 +40,10 @@ import androidx.compose.ui.graphics.Color
 import com.rehabtrack.app.navigation.Routes
 
 @Composable
-fun ExerciseInfoScreen(navController: NavController) {
+fun ExerciseInfoScreen(
+    navController: NavController,
+    nombreEjercicio: String
+) {
     val colors = MaterialTheme.colorScheme
 
     Scaffold(
@@ -92,7 +95,7 @@ fun ExerciseInfoScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = "Sentadilla asistida",
+                    text = nombreEjercicio,
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.headlineSmall,
                     color = colors.onBackground,

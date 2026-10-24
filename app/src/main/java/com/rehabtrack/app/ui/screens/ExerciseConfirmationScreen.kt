@@ -30,6 +30,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 
 private val RehabBlue = Color(0xFF1976D2)
 
@@ -44,8 +47,9 @@ fun ExerciseConfirmationScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
-                    .background(RehabBlue),
+                    .background(RehabBlue)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .height(54.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
@@ -75,7 +79,8 @@ fun ExerciseConfirmationScreen(
                 Spacer(modifier = Modifier.size(48.dp))
             }
         },
-        containerColor = Color.White
+        containerColor = Color.White,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Column(
             modifier = Modifier

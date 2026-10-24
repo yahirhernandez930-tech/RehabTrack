@@ -18,11 +18,26 @@ import com.rehabtrack.app.ui.screens.ExerciseExecutionScreen
 import com.rehabtrack.app.ui.screens.NextSessionScreen
 import com.rehabtrack.app.ui.screens.SessionConfirmationScreen
 import com.rehabtrack.app.ui.screens.ExerciseInfoScreen
+import com.rehabtrack.app.ui.screens.SessionCompletionScreen
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 @Composable
 fun AppNavigation() {
 
     val navController = rememberNavController()
+
+    var ejercicioActual by remember {
+        mutableIntStateOf(0)
+    }
+
+    val ejercicios = listOf(
+        "Sentadilla asistida",
+        "Extensión de rodilla",
+        "Elevación de pierna"
+    )
 
     NavHost(
         navController = navController,
@@ -66,7 +81,17 @@ fun AppNavigation() {
         }
 
         composable(Routes.NextSession.route) {
-            NextSessionScreen(navController)
+            NextSessionScreen(
+                navController = navController,
+                onStartSession = {
+                    ejercicioActual = 0
+                    navController.navigate(Routes.SessionConfirmation.route) {
+                        popUpTo(Routes.NextSession.route) {
+                            inclusive = false
+                        }
+                    }
+                }
+            )
         }
 
         composable(Routes.SessionConfirmation.route) {
@@ -74,7 +99,10 @@ fun AppNavigation() {
         }
 
         composable(Routes.ExerciseInfo.route) {
-            ExerciseInfoScreen(navController)
+            ExerciseInfoScreen(
+                navController = navController,
+                nombreEjercicio = ejercicios[ejercicioActual]
+            )
         }
 
         composable(Routes.Exercise.route) {
@@ -85,7 +113,25 @@ fun AppNavigation() {
             ExerciseConfirmationScreen(
                 navController = navController,
                 onContinue = {
-                    navController.navigate(Routes.ExerciseInfo.route)
+                    if (ejercicioActual < ejercicios.lastIndex) {
+                        ejercicioActual++
+
+                        navController.navigate(
+                            Routes.ExerciseInfo.route
+                        ) {
+                            popUpTo(Routes.ExerciseInfo.route) {
+                                inclusive = true
+                            }
+                        }
+                    } else {
+                        navController.navigate(
+                            Routes.SessionCompletion.route
+                        ) {
+                            popUpTo(Routes.NextSession.route) {
+                                inclusive = false
+                            }
+                        }
+                    }
                 },
                 onExit = {
                     navController.popBackStack(
@@ -94,6 +140,10 @@ fun AppNavigation() {
                     )
                 }
             )
+        }
+
+        composable(Routes.SessionCompletion.route) {
+            SessionCompletionScreen(navController)
         }
     }
 }

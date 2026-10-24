@@ -39,7 +39,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import com.rehabtrack.app.navigation.Routes
 
 @Composable
-fun NextSessionScreen(navController: NavController) {
+fun NextSessionScreen(
+    navController: NavController,
+    onStartSession: () -> Unit
+) {
     val colors = MaterialTheme.colorScheme
 
     Scaffold(
@@ -203,9 +206,7 @@ fun NextSessionScreen(navController: NavController) {
                 contentAlignment = Alignment.Center
             ) {
                 Button(
-                    onClick = {
-                        navController.navigate(Routes.SessionConfirmation.route)
-                    },
+                    onClick = onStartSession,
                     modifier = Modifier
                         .fillMaxWidth(0.68f)
                         .height(48.dp),
