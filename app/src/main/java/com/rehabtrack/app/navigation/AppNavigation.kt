@@ -4,6 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.rehabtrack.app.ui.screens.auth.LoginScreen
 import com.rehabtrack.app.ui.screens.auth.RegisterScreen
 import com.rehabtrack.app.ui.screens.patient.HomeScreen
@@ -19,10 +23,10 @@ import com.rehabtrack.app.ui.screens.patient.NextSessionScreen
 import com.rehabtrack.app.ui.screens.patient.SessionConfirmationScreen
 import com.rehabtrack.app.ui.screens.patient.ExerciseInfoScreen
 import com.rehabtrack.app.ui.screens.patient.SessionCompletionScreen
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import com.rehabtrack.app.ui.screens.physiotherapist.PhysiotherapistHomeScreen
+import com.rehabtrack.app.ui.screens.physiotherapist.PatientDetailScreen
+import com.rehabtrack.app.ui.screens.physiotherapist.ManageProgramScreen
+import com.rehabtrack.app.ui.screens.physiotherapist.SelectExercisesScreen
 
 @Composable
 fun AppNavigation() {
@@ -144,6 +148,73 @@ fun AppNavigation() {
 
         composable(Routes.SessionCompletion.route) {
             SessionCompletionScreen(navController)
+        }
+
+        composable(Routes.PhysiotherapistHome.route) {
+            PhysiotherapistHomeScreen(
+                onHomeClick = {
+                    navController.navigate(Routes.PhysiotherapistHome.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onPatientsClick = {
+                    // Conectaremos esta acción cuando creemos la pantalla Pacientes.
+                },
+                onProfileClick = {
+                    // Conectaremos esta acción cuando definamos el perfil del fisioterapeuta.
+                },
+                onPatientClick = { nombrePaciente ->
+                    navController.navigate(
+                        "${Routes.PatientDetail.route}/${
+                            java.net.URLEncoder.encode(nombrePaciente, "UTF-8")
+                        }"
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = "${Routes.PatientDetail.route}/{patientName}"
+        ) { backStackEntry ->
+
+            val patientName = java.net.URLDecoder.decode(
+                backStackEntry.arguments?.getString("patientName") ?: "Paciente",
+                "UTF-8"
+            )
+
+            PatientDetailScreen(
+                navController = navController,
+                patientName = patientName,
+                onManageProgram = {
+                    navController.navigate(
+                        "${Routes.ManageProgram.route}/${
+                            java.net.URLEncoder.encode(patientName, "UTF-8")
+                        }"
+                    )
+                },
+                onViewHistory = {
+                    // Conectaremos esta acción al implementar el historial.
+                }
+            )
+        }
+
+        composable(
+            route = "${Routes.ManageProgram.route}/{patientName}"
+        ) { backStackEntry ->
+
+            val patientName = java.net.URLDecoder.decode(
+                backStackEntry.arguments?.getString("patientName") ?: "Paciente",
+                "UTF-8"
+            )
+
+            ManageProgramScreen(
+                navController = navController,
+                patientName = patientName
+            )
+        }
+
+        composable(Routes.SelectExercises.route) {
+            SelectExercisesScreen(navController)
         }
     }
 }

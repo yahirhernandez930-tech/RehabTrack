@@ -117,12 +117,19 @@ fun LoginScreen(
                 passwordError = password.isBlank()
 
                 if (!emailError && !passwordError) {
-                    navController.navigate(
-                        Routes.Home.route
+                    val destino = if (
+                        email.trim().equals(
+                            "fisioterapeuta@rehabtrack.com",
+                            ignoreCase = true
+                        )
                     ) {
-                        popUpTo(
-                            Routes.Login.route
-                        ) {
+                        Routes.PhysiotherapistHome.route
+                    } else {
+                        Routes.Home.route
+                    }
+
+                    navController.navigate(destino) {
+                        popUpTo(Routes.Login.route) {
                             inclusive = true
                         }
                         launchSingleTop = true
