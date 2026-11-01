@@ -1,28 +1,16 @@
 package com.rehabtrack.app.ui.screens.patient
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,17 +18,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.navigation.NavController
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
+import com.rehabtrack.app.R
+
+private val SessionBlue = Color(0xFF1976D2)
+private val SessionText = Color(0xFF263238)
+private val SessionSecondary = Color(0xFF64748B)
+private val SessionBorder = Color(0xFFCBD5E1)
+private val SessionLightBlue = Color(0xFFE3F2FD)
 
 private data class CompletedExercise(
     val name: String,
@@ -49,16 +40,16 @@ private data class CompletedExercise(
 
 private val exampleExercises = listOf(
     CompletedExercise(
-        name = "Sentadilla asistida",
-        details = "3 series · 10 repeticiones"
+        "Sentadilla asistida",
+        "3 series · 10 repeticiones"
     ),
     CompletedExercise(
-        name = "Flexión de rodilla",
-        details = "3 series · 8 repeticiones"
+        "Flexión de rodilla",
+        "3 series · 8 repeticiones"
     ),
     CompletedExercise(
-        name = "Extensión de rodilla",
-        details = "2 series · 10 repeticiones"
+        "Extensión de rodilla",
+        "2 series · 10 repeticiones"
     )
 )
 
@@ -66,278 +57,284 @@ private val exampleExercises = listOf(
 fun SessionDetailScreen(
     navController: NavController
 ) {
-    val colors = MaterialTheme.colorScheme
 
-    Scaffold(
-        containerColor = colors.background,
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(colors.primary)
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .height(56.dp)
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
+    val showEvidence = remember { mutableStateOf(false) }
+
+    if (showEvidence.value) {
+        AlertDialog(
+            onDismissRequest = {
+                showEvidence.value = false
+            },
+            title = {
+                Text("Sentadilla asistida")
+            },
+            text = {
+                Image(
+                    painter = painterResource(
+                        id = R.drawable.evidencia_sentadilla
+                    ),
+                    contentDescription = "Fotografía ampliada de sentadilla asistida",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 450.dp),
+                    contentScale = ContentScale.Fit
+                )
+            },
+            confirmButton = {
+                TextButton(
                     onClick = {
-                        navController.popBackStack()
+                        showEvidence.value = false
                     }
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Volver al historial",
-                        tint = colors.onPrimary
-                    )
+                    Text("Cerrar")
                 }
-
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Detalle de sesión",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = colors.onPrimary,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                // Equilibra el espacio ocupado por la flecha.
-                Spacer(modifier = Modifier.width(48.dp))
             }
-        }
+        )
+    }
+
+    Scaffold(
+        containerColor = Color.White,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
+                .background(Color.White)
         ) {
-            Spacer(modifier = Modifier.height(22.dp))
 
-            Text(
-                text = "Sesión del 30 septiembre 2026",
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.onBackground,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = "Fortalecimiento de rodilla",
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.onBackground,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Resumen de la sesión
-            Text(
-                text = "Resumen de la sesión",
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.onBackground,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Duración",
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onBackground,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "20 min",
-                style = MaterialTheme.typography.bodyLarge,
-                color = colors.onBackground
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
+            // Encabezado
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Dolor inicial",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.onBackground,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Text(
-                        text = "4/10",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.onBackground,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Dolor final",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.onBackground,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Text(
-                        text = "3/10",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.onBackground,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(30.dp))
-
-            // Ejercicios realizados
-            Text(
-                text = "Ejercicios realizados",
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.onBackground,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            exampleExercises.forEach { exercise ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        text = "✓",
-                        color = Color(0xFF2E7D32),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    Column {
-                        Text(
-                            text = exercise.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onBackground,
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Text(
-                            text = exercise.details,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onBackground
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(22.dp))
-
-            // Evidencia fotográfica
-            Text(
-                text = "Evidencia de la sesión",
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.onBackground,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                contentAlignment = Alignment.Center
+                    .background(SessionBlue)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .height(54.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                EvidencePlaceholder()
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Regresar",
+                        tint = Color.White
+                    )
+                }
+
+                Text(
+                    text = "Detalle de sesión",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Spacer(Modifier.width(48.dp))
+            }
+
+            // Contenido
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 22.dp)
+                    .navigationBarsPadding()
+            ) {
+
+                Spacer(Modifier.height(22.dp))
+
+                // Información del paciente
+                Text(
+                    text = "María López",
+                    color = SessionText,
+                    fontSize = 21.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(5.dp))
+
+                Text(
+                    text = "Sesión del 30 de septiembre de 2026",
+                    color = SessionSecondary,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(22.dp))
+
+                // Indicadores de la sesión
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SessionStatisticCard(
+                        label = "Duración",
+                        value = "20 min",
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    SessionStatisticCard(
+                        label = "Dolor final",
+                        value = "3/10",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                // Ejercicios realizados
+                Text(
+                    text = "Ejercicios realizados",
+                    color = SessionText,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                exampleExercises.forEach { exercise ->
+                    ExerciseDetailCard(exercise)
+
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // Evidencia fotográfica
+                Text(
+                    text = "Evidencia fotográfica",
+                    color = SessionText,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp)
+                ) {
+                    Text(
+                        text = "Sentadilla asistida",
+                        color = SessionText,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Image(
+                        painter = painterResource(
+                            id = R.drawable.evidencia_sentadilla
+                        ),
+                        contentDescription = "Evidencia de sentadilla asistida",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                showEvidence.value = true
+                            },
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = {
+                            showEvidence.value = true
+                        },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text("Ver evidencia fotográfica")
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun EvidencePlaceholder() {
-    val colors = MaterialTheme.colorScheme
-
-    Box(
-        modifier = Modifier
-            .size(width = 118.dp, height = 118.dp)
+private fun SessionStatisticCard(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    secondaryText: String? = null
+) {
+    Column(
+        modifier = modifier
+            .height(96.dp)
             .background(
-                color = colors.background,
-                shape = RoundedCornerShape(14.dp)
-            ),
-        contentAlignment = Alignment.Center
+                SessionLightBlue,
+                RoundedCornerShape(12.dp)
+            )
+            .padding(horizontal = 5.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Canvas(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            val stroke = 2.5.dp.toPx()
-            val left = stroke / 2
-            val top = stroke / 2
-            val right = size.width - stroke / 2
-            val bottom = size.height - stroke / 2
+        Text(
+            text = label,
+            color = SessionBlue,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold
+        )
 
-            // Marco de la imagen.
-            drawRoundRect(
-                color = Color(0xFF222222),
-                topLeft = Offset(left, top),
-                size = Size(
-                    right - left,
-                    bottom - top
-                ),
-                cornerRadius = CornerRadius(
-                    14.dp.toPx(),
-                    14.dp.toPx()
-                ),
-                style = Stroke(stroke)
-            )
+        Spacer(Modifier.height(8.dp))
 
-            // Sol.
-            drawCircle(
-                color = Color(0xFF222222),
-                radius = 9.dp.toPx(),
-                center = Offset(
-                    size.width * 0.31f,
-                    size.height * 0.31f
-                ),
-                style = Stroke(stroke)
-            )
+        Text(
+            text = value,
+            color = SessionText,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
 
-            // Montañas.
-            val mountain = Path().apply {
-                moveTo(size.width * 0.12f, size.height * 0.87f)
-                lineTo(size.width * 0.72f, size.height * 0.39f)
-                lineTo(size.width * 0.98f, size.height * 0.66f)
-            }
+        if (secondaryText != null) {
+            Spacer(Modifier.height(3.dp))
 
-            drawPath(
-                path = mountain,
-                color = Color(0xFF222222),
-                style = Stroke(
-                    width = stroke,
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round
-                )
+            Text(
+                text = secondaryText,
+                color = SessionSecondary,
+                fontSize = 10.sp
             )
         }
+    }
+}
+
+@Composable
+private fun ExerciseDetailCard(
+    exercise: CompletedExercise
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = SessionBorder,
+                shape = RoundedCornerShape(9.dp)
+            )
+            .padding(horizontal = 13.dp, vertical = 11.dp)
+    ) {
+        Text(
+            text = exercise.name,
+            color = SessionText,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(Modifier.height(5.dp))
+
+        Text(
+            text = exercise.details,
+            color = SessionSecondary,
+            fontSize = 11.sp
+        )
     }
 }
