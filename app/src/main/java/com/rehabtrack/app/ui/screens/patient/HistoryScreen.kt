@@ -65,9 +65,11 @@ private val sampleHistory = listOf(
 
 @Composable
 fun HistoryScreen(
-    navController: NavController
+    navController: NavController,
+    patientName: String? = null
 ) {
     val colors = MaterialTheme.colorScheme
+    val isPhysioterapist = patientName != null
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -75,10 +77,12 @@ fun HistoryScreen(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            PatientBottomBar(
-                navController = navController,
-                currentRoute = currentRoute
-            )
+            if(!isPhysioterapist) {
+                PatientBottomBar(
+                    navController = navController,
+                    currentRoute = currentRoute
+                )
+            }
         }
     ) { innerPadding ->
         Column(
@@ -113,13 +117,30 @@ fun HistoryScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Historial",
+                    text = if (isPhysioterapist) {
+                        "Historial de sesiones"
+                    } else {
+                        "Historial"
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.titleLarge,
                     color = colors.onBackground,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
+
+                if (isPhysioterapist) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = patientName.orEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colors.onBackground,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -136,9 +157,15 @@ fun HistoryScreen(
                     HistorySessionItem(
                         session = session,
                         onViewMore = {
-                            navController.navigate(
-                                Routes.SessionDetail.route
-                            )
+                            if (patientName == null) {
+                                navController.navigate(Routes.SessionDetail.route)
+                            } else {
+                                navController.navigate(
+                                    "${Routes.SessionDetail.route}/${
+                                        java.net.URLEncoder.encode(patientName, "UTF-8")
+                                    }"
+                                )
+                            }
                         }
                     )
 

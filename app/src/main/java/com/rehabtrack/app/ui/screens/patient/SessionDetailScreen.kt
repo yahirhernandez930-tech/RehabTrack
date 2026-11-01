@@ -55,7 +55,8 @@ private val exampleExercises = listOf(
 
 @Composable
 fun SessionDetailScreen(
-    navController: NavController
+    navController: NavController,
+    patientName: String = "María López"
 ) {
 
     val showEvidence = remember { mutableStateOf(false) }
@@ -149,7 +150,7 @@ fun SessionDetailScreen(
 
                 // Información del paciente
                 Text(
-                    text = "María López",
+                    text = patientName,
                     color = SessionText,
                     fontSize = 21.sp,
                     fontWeight = FontWeight.Bold,

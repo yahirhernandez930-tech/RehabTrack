@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.navigation.NavController
 import com.rehabtrack.app.ui.screens.auth.LoginScreen
 import com.rehabtrack.app.ui.screens.auth.RegisterScreen
 import com.rehabtrack.app.ui.screens.patient.HomeScreen
@@ -68,8 +69,38 @@ fun AppNavigation() {
             HistoryScreen(navController)
         }
 
+        composable(
+            route = "${Routes.History.route}/{patientName}"
+        ) { backStackEntry ->
+
+            val patientName = java.net.URLDecoder.decode(
+                backStackEntry.arguments?.getString("patientName") ?: "Paciente",
+                "UTF-8"
+            )
+
+            HistoryScreen(
+                navController = navController,
+                patientName = patientName
+            )
+        }
+
         composable(Routes.SessionDetail.route) {
             SessionDetailScreen(navController)
+        }
+
+        composable(
+            route = "${Routes.SessionDetail.route}/{patientName}"
+        ) { backStackEntry ->
+
+            val patientName = java.net.URLDecoder.decode(
+                backStackEntry.arguments?.getString("patientName") ?: "Paciente",
+                "UTF-8"
+            )
+
+            SessionDetailScreen(
+                navController = navController,
+                patientName = patientName
+            )
         }
 
         composable(Routes.Profile.route) {
@@ -193,7 +224,11 @@ fun AppNavigation() {
                     )
                 },
                 onViewHistory = {
-                    // Conectaremos esta acción al implementar el historial.
+                    navController.navigate(
+                        "${Routes.History.route}/${
+                                java.net.URLEncoder.encode(patientName, "UTF-8")
+                        }"
+                    )
                 }
             )
         }
