@@ -28,4 +28,6 @@ sealed class Routes(val route: String) {
     data object PatientDetail : Routes("patient_detail")
     data object ManageProgram : Routes("manage_program")
     data object SelectExercises : Routes("select_exercises")
+
+    data object RegisterPatient : Routes("register_patient")
 }

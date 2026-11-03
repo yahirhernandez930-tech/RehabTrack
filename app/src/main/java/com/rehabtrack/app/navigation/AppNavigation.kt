@@ -28,6 +28,7 @@ import com.rehabtrack.app.ui.screens.physiotherapist.PatientDetailScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.ManageProgramScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.SelectExercisesScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.PatientsScreen
+import com.rehabtrack.app.ui.screens.physiotherapist.RegisterPatientScreen
 
 @Composable
 fun AppNavigation() {
@@ -229,7 +230,18 @@ fun AppNavigation() {
                     )
                 },
                 onAddPatientClick = {
-                    // Implementaremos el registro de pacientes posteriormente.
+                    navController.navigate(Routes.RegisterPatient.route)
+                }
+            )
+        }
+
+        composable(Routes.RegisterPatient.route) {
+            RegisterPatientScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onRegisterClick = {
+                    // La lógica de registro se implementará posteriormente.
                 }
             )
         }
