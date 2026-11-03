@@ -31,6 +31,7 @@ private val RehabSecondary = Color(0xFF64748B)
 
 @Composable
 fun PhysiotherapistBottomBar(
+    selectedItem: String,
     onHomeClick: () -> Unit,
     onPatientsClick: () -> Unit,
     onProfileClick: () -> Unit
@@ -47,21 +48,21 @@ fun PhysiotherapistBottomBar(
         PhysiotherapistBottomBarItem(
             label = "Inicio",
             icon = Icons.Default.Home,
-            selected = true,
+            selected = selectedItem == "home",
             onClick = onHomeClick
         )
 
         PhysiotherapistBottomBarItem(
             label = "Pacientes",
             icon = Icons.Default.People,
-            selected = false,
+            selected = selectedItem == "patients",
             onClick = onPatientsClick
         )
 
         PhysiotherapistBottomBarItem(
             label = "Perfil",
             icon = Icons.Default.Person,
-            selected = false,
+            selected = selectedItem == "profile",
             onClick = onProfileClick
         )
     }

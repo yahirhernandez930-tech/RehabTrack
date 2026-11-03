@@ -23,6 +23,7 @@ sealed class Routes(val route: String) {
     data object SessionCompletion : Routes("session_completion")
 
     data object PhysiotherapistHome : Routes("physiotherapist_home")
+    data object Patients : Routes("patients")
 
     data object PatientDetail : Routes("patient_detail")
     data object ManageProgram : Routes("manage_program")

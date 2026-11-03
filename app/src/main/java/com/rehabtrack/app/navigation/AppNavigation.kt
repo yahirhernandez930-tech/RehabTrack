@@ -8,7 +8,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.navigation.NavController
 import com.rehabtrack.app.ui.screens.auth.LoginScreen
 import com.rehabtrack.app.ui.screens.auth.RegisterScreen
 import com.rehabtrack.app.ui.screens.patient.HomeScreen
@@ -28,6 +27,7 @@ import com.rehabtrack.app.ui.screens.physiotherapist.PhysiotherapistHomeScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.PatientDetailScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.ManageProgramScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.SelectExercisesScreen
+import com.rehabtrack.app.ui.screens.physiotherapist.PatientsScreen
 
 @Composable
 fun AppNavigation() {
@@ -189,7 +189,9 @@ fun AppNavigation() {
                     }
                 },
                 onPatientsClick = {
-                    // Conectaremos esta acción cuando creemos la pantalla Pacientes.
+                    navController.navigate(Routes.Patients.route) {
+                        launchSingleTop = true
+                    }
                 },
                 onProfileClick = {
                     // Conectaremos esta acción cuando definamos el perfil del fisioterapeuta.
@@ -200,6 +202,34 @@ fun AppNavigation() {
                             java.net.URLEncoder.encode(nombrePaciente, "UTF-8")
                         }"
                     )
+                }
+            )
+        }
+
+        composable(Routes.Patients.route) {
+            PatientsScreen(
+                onHomeClick = {
+                    navController.navigate(Routes.PhysiotherapistHome.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onPatientsClick = {
+                    navController.navigate(Routes.Patients.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onProfileClick = {
+                    // Conectaremos esta acción al implementar el perfil.
+                },
+                onPatientClick = { nombrePaciente ->
+                    navController.navigate(
+                        "${Routes.PatientDetail.route}/${
+                            java.net.URLEncoder.encode(nombrePaciente, "UTF-8")
+                        }"
+                    )
+                },
+                onAddPatientClick = {
+                    // Implementaremos el registro de pacientes posteriormente.
                 }
             )
         }
