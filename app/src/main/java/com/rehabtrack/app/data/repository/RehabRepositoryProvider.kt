@@ -14,4 +14,6 @@ class RehabRepositoryProvider(context: Context) {
     val fisioterapeutaRepository = FisioterapeutaRepository(database.fisioterapeutaDao())
 
     val asignacionRepository = AsignacionRepository(database.asignacionDao())
+
+    val authRepository = AuthRepository(database.authDao())
 }

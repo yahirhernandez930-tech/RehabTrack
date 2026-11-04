@@ -4,11 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
 import com.rehabtrack.app.navigation.AppNavigation
 import com.rehabtrack.app.ui.theme.RehabTrackTheme

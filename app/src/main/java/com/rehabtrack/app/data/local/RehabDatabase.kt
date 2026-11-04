@@ -8,6 +8,7 @@ import com.rehabtrack.app.data.local.dao.AsignacionDao
 import com.rehabtrack.app.data.local.dao.FisioterapeutaDao
 import com.rehabtrack.app.data.local.dao.PacienteDao
 import com.rehabtrack.app.data.local.dao.UsuarioDao
+import com.rehabtrack.app.data.local.dao.AuthDao
 import com.rehabtrack.app.data.local.entity.AsignacionEntity
 import com.rehabtrack.app.data.local.entity.FisioterapeutaEntity
 import com.rehabtrack.app.data.local.entity.PacienteEntity
@@ -32,6 +33,8 @@ abstract class RehabDatabase : RoomDatabase() {
     abstract fun fisioterapeutaDao(): FisioterapeutaDao
 
     abstract fun asignacionDao(): AsignacionDao
+
+    abstract fun authDao(): AuthDao
 
     companion object {
 

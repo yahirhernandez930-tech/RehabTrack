@@ -3,17 +3,21 @@ package com.rehabtrack.app.ui.screens.auth
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,21 +26,47 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.rehabtrack.app.ui.components.RehabTextField
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.width
 import com.rehabtrack.app.navigation.Routes
+import com.rehabtrack.app.ui.components.RehabTextField
+import com.rehabtrack.app.ui.viewmodel.AuthState
+import com.rehabtrack.app.ui.viewmodel.AuthViewModel
 
 @Composable
 fun LoginScreen(
-    navController: NavController
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     var emailError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
+
+    val authState by authViewModel.authState.collectAsState()
+
+    // Navegación según el rol autenticado.
+    LaunchedEffect(authState) {
+        if (authState is AuthState.LoginExitoso) {
+            val rol = (authState as AuthState.LoginExitoso).rol
+
+            val destino = when (rol) {
+                "PACIENTE" -> Routes.Home.route
+                "FISIOTERAPEUTA" -> Routes.PhysiotherapistHome.route
+                else -> null
+            }
+
+            destino?.let {
+                navController.navigate(it) {
+                    popUpTo(Routes.Login.route) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -69,6 +99,7 @@ fun LoginScreen(
             onValueChange = {
                 email = it
                 emailError = false
+                authViewModel.limpiarEstado()
             },
             label = "Correo electrónico",
             modifier = Modifier.fillMaxWidth()
@@ -92,6 +123,7 @@ fun LoginScreen(
             onValueChange = {
                 password = it
                 passwordError = false
+                authViewModel.limpiarEstado()
             },
             label = "Contraseña",
             isPassword = true,
@@ -109,6 +141,32 @@ fun LoginScreen(
             )
         }
 
+        // Mensajes del proceso de autenticación.
+        when (val state = authState) {
+            is AuthState.Error -> {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = state.mensaje,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            AuthState.Loading -> {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Verificando credenciales...",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            else -> Unit
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
@@ -117,25 +175,13 @@ fun LoginScreen(
                 passwordError = password.isBlank()
 
                 if (!emailError && !passwordError) {
-                    val destino = if (
-                        email.trim().equals(
-                            "fisioterapeuta@rehabtrack.com",
-                            ignoreCase = true
-                        )
-                    ) {
-                        Routes.PhysiotherapistHome.route
-                    } else {
-                        Routes.Home.route
-                    }
-
-                    navController.navigate(destino) {
-                        popUpTo(Routes.Login.route) {
-                            inclusive = true
-                        }
-                        launchSingleTop = true
-                    }
+                    authViewModel.iniciarSesion(
+                        correo = email,
+                        password = password
+                    )
                 }
             },
+            enabled = authState != AuthState.Loading,
             modifier = Modifier
                 .fillMaxWidth(0.65f)
                 .height(56.dp),
@@ -171,7 +217,8 @@ fun LoginScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.clickable {
-                    navController.navigate("register")
+                    authViewModel.limpiarEstado()
+                    navController.navigate(Routes.Register.route)
                 }
             )
         }
