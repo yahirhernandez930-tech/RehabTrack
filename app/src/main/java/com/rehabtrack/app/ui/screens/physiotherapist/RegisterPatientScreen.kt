@@ -39,6 +39,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
+import java.text.SimpleDateFormat
+import java.text.ParsePosition
+import java.util.Date
+import java.util.Locale
 
 private val RegisterBlue = Color(0xFF1976D2)
 
@@ -53,7 +57,13 @@ fun RegisterPatientScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
+
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var birthDateError by remember { mutableStateOf<String?>(null) }
+    var phoneError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         containerColor = Color.White,
@@ -119,7 +129,11 @@ fun RegisterPatientScreen(
                 onValueChange = { name = it },
                 label = { Text("Nombre completo *") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                isError = nameError != null,
+                supportingText = {
+                    nameError?.let { Text(it) }
+                }
             )
 
             Spacer(Modifier.height(12.dp))
@@ -133,7 +147,11 @@ fun RegisterPatientScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number
-                )
+                ),
+                isError = birthDateError != null,
+                supportingText = {
+                    birthDateError?.let { Text(it) }
+                }
             )
 
             Spacer(Modifier.height(12.dp))
@@ -146,7 +164,11 @@ fun RegisterPatientScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Phone
-                )
+                ),
+                isError = phoneError != null,
+                supportingText = {
+                    phoneError?.let { Text(it) }
+                }
             )
 
             Spacer(Modifier.height(25.dp))
@@ -167,7 +189,11 @@ fun RegisterPatientScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email
-                )
+                ),
+                isError = emailError != null,
+                supportingText = {
+                    emailError?.let { Text(it) }
+                }
             )
 
             Spacer(Modifier.height(12.dp))
@@ -178,7 +204,11 @@ fun RegisterPatientScreen(
                 label = { Text("Contraseña *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+                visualTransformation = PasswordVisualTransformation(),
+                isError = passwordError != null,
+                supportingText = {
+                    passwordError?.let { Text(it) }
+                }
             )
 
             Spacer(Modifier.height(12.dp))
@@ -189,57 +219,78 @@ fun RegisterPatientScreen(
                 label = { Text("Confirmar contraseña *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+                visualTransformation = PasswordVisualTransformation(),
+                isError = confirmPasswordError != null,
+                supportingText = {
+                    confirmPasswordError?.let { Text(it) }
+                }
             )
 
             Spacer(Modifier.height(20.dp))
 
-            if (errorMessage.isNotEmpty()) {
-                Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(Modifier.height(12.dp))
-            }
-
             Button(
                 onClick = {
-                    errorMessage = when {
-                        name.isBlank() ->
-                            "Ingresa el nombre completo."
+                    // Limpiar errores anteriores
+                    nameError = null
+                    birthDateError = null
+                    phoneError = null
+                    emailError = null
+                    passwordError = null
+                    confirmPasswordError = null
 
-                        birthDate.isBlank() ->
-                            "Ingresa la fecha de nacimiento."
-
-                        !birthDate.matches(
-                            Regex("""\d{2}/\d{2}/\d{4}""")
-                        ) ->
-                            "La fecha debe tener el formato DD/MM/AAAA."
-
-                        email.isBlank() ->
-                            "Ingresa el correo electrónico."
-
-                        !android.util.Patterns.EMAIL_ADDRESS
-                            .matcher(email).matches() ->
-                            "Ingresa un correo electrónico válido."
-
-                        password.isBlank() ->
-                            "Ingresa una contraseña."
-
-                        password.length < 8 ->
-                            "La contraseña debe tener al menos 8 caracteres."
-
-                        confirmPassword.isBlank() ->
-                            "Confirma la contraseña."
-
-                        password != confirmPassword ->
-                            "Las contraseñas no coinciden."
-
-                        else -> ""
+                    // Validar nombre
+                    if (name.isBlank()) {
+                        nameError = "Ingresa el nombre completo."
                     }
 
-                    if (errorMessage.isEmpty()) {
+                    // Validar fecha de nacimiento
+                    if (birthDate.isBlank()) {
+                        birthDateError = "Ingresa la fecha de nacimiento."
+                    } else if (!isValidBirthDate(birthDate.trim())) {
+                        birthDateError = "Ingresa una fecha válida (DD/MM/AAAA)."
+                    }
+
+                    // Validar teléfono únicamente si se proporcionó
+                    val digits = phone.filter { it.isDigit() }
+
+                    if (digits.length != 10 ||
+                        !phone.matches(Regex("""^[\d\s()+-]+$"""))
+                    ) {
+                        phoneError = "Ingresa un teléfono válido de 10 dígitos."
+                    }
+
+                    // Validar correo electrónico
+                    if (email.isBlank()) {
+                        emailError = "Ingresa el correo electrónico."
+                    } else if (!android.util.Patterns.EMAIL_ADDRESS
+                            .matcher(email.trim()).matches()
+                    ) {
+                        emailError = "Ingresa un correo electrónico válido."
+                    }
+
+                    // Validar contraseña
+                    if (password.isBlank()) {
+                        passwordError = "Ingresa una contraseña."
+                    } else if (password.length < 8) {
+                        passwordError = "Debe tener al menos 8 caracteres."
+                    }
+
+                    // Validar confirmación
+                    if (confirmPassword.isBlank()) {
+                        confirmPasswordError = "Confirma la contraseña."
+                    } else if (password != confirmPassword) {
+                        confirmPasswordError = "Las contraseñas no coinciden."
+                    }
+
+                    // Continuar únicamente si no existen errores
+                    if (
+                        nameError == null &&
+                        birthDateError == null &&
+                        phoneError == null &&
+                        emailError == null &&
+                        passwordError == null &&
+                        confirmPasswordError == null
+                    ) {
                         onRegisterClick()
                     }
                 },
@@ -264,4 +315,20 @@ fun RegisterPatientScreen(
             Spacer(Modifier.height(20.dp))
         }
     }
+}
+
+private fun isValidBirthDate(value: String): Boolean {
+    val formatter = SimpleDateFormat(
+        "dd/MM/yyyy",
+        Locale.US
+    )
+
+    formatter.isLenient = false
+
+    val position = ParsePosition(0)
+    val date = formatter.parse(value, position)
+
+    return date != null &&
+            position.index == value.length &&
+            !date.after(Date())
 }
