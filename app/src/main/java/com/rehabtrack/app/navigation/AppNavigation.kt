@@ -29,6 +29,7 @@ import com.rehabtrack.app.ui.screens.physiotherapist.ManageProgramScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.SelectExercisesScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.PatientsScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.RegisterPatientScreen
+import com.rehabtrack.app.ui.screens.physiotherapist.SelectPatientScreen
 
 @Composable
 fun AppNavigation() {
@@ -182,68 +183,110 @@ fun AppNavigation() {
             SessionCompletionScreen(navController)
         }
 
-        composable(Routes.PhysiotherapistHome.route) {
-            PhysiotherapistHomeScreen(
-                onHomeClick = {
-                    navController.navigate(Routes.PhysiotherapistHome.route) {
-                        launchSingleTop = true
+        composable(
+            route = "${Routes.PhysiotherapistHome.route}/{idUsuario}"
+        ) { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                PhysiotherapistHomeScreen(
+                    onHomeClick = {
+                        navController.navigate(
+                            "${Routes.PhysiotherapistHome.route}/$idUsuario"
+                        ) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPatientsClick = {
+                        navController.navigate(
+                            "${Routes.Patients.route}/$idUsuario"
+                        ) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = {
+                        // Pendiente de implementar.
+                    },
+                    onPatientClick = { nombrePaciente ->
+                        navController.navigate(
+                            "${Routes.PatientDetail.route}/${
+                                java.net.URLEncoder.encode(nombrePaciente, "UTF-8")
+                            }"
+                        )
                     }
-                },
-                onPatientsClick = {
-                    navController.navigate(Routes.Patients.route) {
-                        launchSingleTop = true
-                    }
-                },
-                onProfileClick = {
-                    // Conectaremos esta acción cuando definamos el perfil del fisioterapeuta.
-                },
-                onPatientClick = { nombrePaciente ->
-                    navController.navigate(
-                        "${Routes.PatientDetail.route}/${
-                            java.net.URLEncoder.encode(nombrePaciente, "UTF-8")
-                        }"
-                    )
-                }
-            )
+                )
+            }
         }
 
-        composable(Routes.Patients.route) {
-            PatientsScreen(
-                onHomeClick = {
-                    navController.navigate(Routes.PhysiotherapistHome.route) {
-                        launchSingleTop = true
+        composable(
+            route = "${Routes.Patients.route}/{idUsuario}"
+        ) { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                PatientsScreen(
+                    idUsuario = idUsuario,
+                    onHomeClick = {
+                        navController.navigate(
+                            "${Routes.PhysiotherapistHome.route}/$idUsuario"
+                        ) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPatientsClick = {
+                        navController.navigate(
+                            "${Routes.Patients.route}/$idUsuario"
+                        ) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = {
+                        // Pendiente de implementar.
+                    },
+                    onPatientClick = { idPaciente ->
+                        navController.navigate(
+                            "${Routes.PatientDetail.route}/$idPaciente"
+                        )
+                    },
+                    onSelectExistingPatientClick = {
+                        navController.navigate(
+                            "${Routes.SelectPatient.route}/$idUsuario"
+                        )
+                    },
+                    onRegisterNewPatientClick = {
+                        navController.navigate(
+                            "${Routes.RegisterPatient.route}/$idUsuario"
+                        )
                     }
-                },
-                onPatientsClick = {
-                    navController.navigate(Routes.Patients.route) {
-                        launchSingleTop = true
-                    }
-                },
-                onProfileClick = {
-                    // Conectaremos esta acción al implementar el perfil.
-                },
-                onPatientClick = { nombrePaciente ->
-                    navController.navigate(
-                        "${Routes.PatientDetail.route}/${
-                            java.net.URLEncoder.encode(nombrePaciente, "UTF-8")
-                        }"
-                    )
-                },
-                onAddPatientClick = {
-                    navController.navigate(Routes.RegisterPatient.route)
-                }
-            )
+                )
+            }
         }
 
-        composable(Routes.RegisterPatient.route) {
-            RegisterPatientScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onRegisterClick = {
-                    // La lógica de registro se implementará posteriormente.
-                }
-            )
+        composable(
+            route = "${Routes.RegisterPatient.route}/{idUsuario}"
+        ) { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                RegisterPatientScreen(
+                    idUsuario = idUsuario,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onRegisterSuccess = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
 
         composable(
@@ -292,6 +335,24 @@ fun AppNavigation() {
 
         composable(Routes.SelectExercises.route) {
             SelectExercisesScreen(navController)
+        }
+
+        composable(
+            route = "${Routes.SelectPatient.route}/{idUsuario}"
+        ) { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                SelectPatientScreen(
+                    idUsuario = idUsuario,
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
     }
 }

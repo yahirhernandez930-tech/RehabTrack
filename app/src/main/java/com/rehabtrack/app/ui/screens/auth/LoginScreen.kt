@@ -49,11 +49,15 @@ fun LoginScreen(
     // Navegación según el rol autenticado.
     LaunchedEffect(authState) {
         if (authState is AuthState.LoginExitoso) {
-            val rol = (authState as AuthState.LoginExitoso).rol
 
-            val destino = when (rol) {
+            val resultado = authState as AuthState.LoginExitoso
+
+            val destino = when (resultado.rol) {
                 "PACIENTE" -> Routes.Home.route
-                "FISIOTERAPEUTA" -> Routes.PhysiotherapistHome.route
+
+                "FISIOTERAPEUTA" ->
+                    "${Routes.PhysiotherapistHome.route}/${resultado.idUsuario}"
+
                 else -> null
             }
 

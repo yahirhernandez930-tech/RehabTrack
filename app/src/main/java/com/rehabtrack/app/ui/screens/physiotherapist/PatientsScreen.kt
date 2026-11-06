@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,7 +41,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rehabtrack.app.ui.components.PhysiotherapistBottomBar
+import com.rehabtrack.app.ui.viewmodel.PatientsViewModel
+import com.rehabtrack.app.ui.viewmodel.PatientsUiState
 
 private val RehabBlue = Color(0xFF1976D2)
 private val RehabText = Color(0xFF263238)
@@ -49,53 +56,46 @@ private val RehabGreen = Color(0xFF2E7D32)
 private val RehabOrange = Color(0xFFF9A825)
 
 private data class PatientItem(
+    val idPaciente: Int,
     val name: String,
-    val treatment: String,
-    val status: String,
-    val needsReview: Boolean
+    val fechaNacimiento: String
 )
 
 @Composable
 fun PatientsScreen(
+    idUsuario: Int,
     onHomeClick: () -> Unit = {},
     onPatientsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onPatientClick: (String) -> Unit = {},
-    onAddPatientClick: () -> Unit = {}
+    onPatientClick: (Int) -> Unit = {},
+    onSelectExistingPatientClick: () -> Unit = {},
+    onRegisterNewPatientClick: () -> Unit = {},
+    patientsViewModel: PatientsViewModel = viewModel()
 ) {
     var searchText by remember { mutableStateOf("") }
 
-    val patients = remember {
-        listOf(
-            PatientItem(
-                name = "María López",
-                treatment = "Rehabilitación de rodilla",
-                status = "En seguimiento",
-                needsReview = false
-            ),
-            PatientItem(
-                name = "Carlos Pérez",
-                treatment = "Rehabilitación de rodilla",
-                status = "Revisar progreso",
-                needsReview = true
-            ),
-            PatientItem(
-                name = "Ana Martínez",
-                treatment = "Rehabilitación de hombro",
-                status = "En seguimiento",
-                needsReview = false
-            ),
-            PatientItem(
-                name = "José Hernández",
-                treatment = "Rehabilitación lumbar",
-                status = "Revisar progreso",
-                needsReview = true
-            )
+    var mostrarDialogoAgregar by remember { mutableStateOf(false)}
+
+    val uiState by patientsViewModel.uiState.collectAsState()
+
+    LaunchedEffect(idUsuario) {
+        patientsViewModel.cargarPacientes(idUsuario)
+    }
+
+    val pacientesReales = (uiState as? PatientsUiState.Success)
+        ?.pacientes
+        .orEmpty()
+
+    val patients = pacientesReales.map { paciente ->
+        PatientItem(
+            idPaciente = paciente.idPaciente,
+            name = paciente.nombre,
+            fechaNacimiento = paciente.fechaNacimiento
         )
     }
 
     val filteredPatients = patients.filter {
-        it.name.contains(searchText,ignoreCase = true)
+        it.name.contains(searchText, ignoreCase = true)
     }
 
     Scaffold(
@@ -223,7 +223,9 @@ fun PatientsScreen(
                                 RehabBlue,
                                 RoundedCornerShape(8.dp)
                             )
-                            .clickable(onClick = onAddPatientClick)
+                            .clickable{
+                                mostrarDialogoAgregar = true
+                            }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -243,28 +245,92 @@ fun PatientsScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
+
+                    if (mostrarDialogoAgregar) {
+                        AlertDialog(
+                            onDismissRequest = {
+                                mostrarDialogoAgregar = false
+                            },
+                            title = {
+                                Text("Agregar paciente")
+                            },
+                            text = {
+                                Text(
+                                    "¿Cómo deseas agregar al paciente?"
+                                )
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        mostrarDialogoAgregar = false
+                                        onSelectExistingPatientClick()
+                                    }
+                                ) {
+                                    Text("Paciente existente")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(
+                                    onClick = {
+                                        mostrarDialogoAgregar = false
+                                        onRegisterNewPatientClick()
+                                    }
+                                ) {
+                                    Text("Registrar nuevo")
+                                }
+                            }
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(25.dp))
 
                 // Lista de pacientes
-                if (filteredPatients.isEmpty()) {
-                    Text(
-                        text = "No se encontraron pacientes.",
-                        color = RehabSecondary,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(vertical = 12.dp)
-                    )
-                } else {
-                    filteredPatients.forEach { patient ->
-                        PatientListCard(
-                            patient = patient,
-                            onClick = {
-                                onPatientClick(patient.name)
-                            }
-                        )
+                when (val state = uiState) {
 
-                        Spacer(Modifier.height(16.dp))
+                    PatientsUiState.Idle,
+                    PatientsUiState.Loading -> {
+                        Text(
+                            text = "Cargando pacientes...",
+                            color = RehabSecondary,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    is PatientsUiState.Error -> {
+                        Text(
+                            text = state.mensaje,
+                            color = Color.Red,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    is PatientsUiState.Success -> {
+
+                        if (filteredPatients.isEmpty()) {
+                            Text(
+                                text = if (searchText.isBlank()) {
+                                    "Todavía no tienes pacientes asignados."
+                                } else {
+                                    "No se encontraron pacientes."
+                                },
+                                color = RehabSecondary,
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        } else {
+                            filteredPatients.forEach { patient ->
+
+                                PatientListCard(
+                                    patient = patient,
+                                    onClick = {
+                                        onPatientClick(patient.idPaciente)
+                                    }
+                                )
+
+                                Spacer(Modifier.height(16.dp))
+                            }
+                        }
                     }
                 }
 
@@ -304,20 +370,16 @@ private fun PatientListCard(
             Spacer(Modifier.height(7.dp))
 
             Text(
-                text = patient.treatment,
+                text = "Nacimiento: ${patient.fechaNacimiento}",
                 color = RehabSecondary,
-                fontSize = 14.sp
+                fontSize = 13.sp
             )
 
             Spacer(Modifier.height(9.dp))
 
             Text(
-                text = patient.status,
-                color = if (patient.needsReview) {
-                    RehabOrange
-                } else {
-                    RehabGreen
-                },
+                text = "Asignación activa",
+                color = RehabGreen,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )

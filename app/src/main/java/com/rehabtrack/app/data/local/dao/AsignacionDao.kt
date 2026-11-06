@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.rehabtrack.app.data.local.entity.AsignacionEntity
+import com.rehabtrack.app.data.local.entity.PacienteEntity
 
 @Dao
 interface AsignacionDao{
@@ -23,4 +24,15 @@ interface AsignacionDao{
 
     @Query("""SELECT * FROM asignaciones WHERE idFisioterapeuta = :idFisioterapeuta AND activa = 1""")
     suspend fun obtenerPacientesAsignados(idFisioterapeuta: Int): List<AsignacionEntity>
+
+    @Query("""
+        SELECT * FROM pacientes
+        WHERE NOT EXISTS (
+            SELECT 1 FROM asignaciones
+            WHERE asignaciones.idPaciente = pacientes.idPaciente
+            AND asignaciones.activa = 1
+        )
+        ORDER BY nombre ASC
+    """)
+    suspend fun obtenerPacientesDisponibles(): List<PacienteEntity>
 }

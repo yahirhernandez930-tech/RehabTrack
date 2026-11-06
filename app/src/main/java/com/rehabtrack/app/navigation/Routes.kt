@@ -30,4 +30,11 @@ sealed class Routes(val route: String) {
     data object SelectExercises : Routes("select_exercises")
 
     data object RegisterPatient : Routes("register_patient")
+    data object SelectPatient : Routes("select_patient")
+
+    fun physiotherapistHome(idUsuario: Int) =
+        "${PhysiotherapistHome.route}/$idUsuario"
+
+    fun patients(idUsuario: Int) =
+        "${Patients.route}/$idUsuario"
 }

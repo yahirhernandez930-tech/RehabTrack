@@ -2,6 +2,7 @@ package com.rehabtrack.app.data.repository
 
 import com.rehabtrack.app.data.local.dao.AsignacionDao
 import com.rehabtrack.app.data.local.entity.AsignacionEntity
+import com.rehabtrack.app.data.local.entity.PacienteEntity
 
 class AsignacionRepository(
     private val asignacionDao: AsignacionDao
@@ -31,5 +32,9 @@ class AsignacionRepository(
         idFisioterapeuta: Int
     ): List<AsignacionEntity> {
         return asignacionDao.obtenerPacientesAsignados(idFisioterapeuta)
+    }
+
+    suspend fun obtenerPacientesDisponibles(): List<PacienteEntity> {
+        return asignacionDao.obtenerPacientesDisponibles()
     }
 }

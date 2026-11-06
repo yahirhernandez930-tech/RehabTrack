@@ -31,6 +31,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,20 +41,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.SimpleDateFormat
 import java.text.ParsePosition
 import java.util.Date
 import java.util.Locale
+import com.rehabtrack.app.ui.viewmodel.AuthViewModel
+import com.rehabtrack.app.ui.viewmodel.AuthState
 
 private val RegisterBlue = Color(0xFF1976D2)
 
 @Composable
 fun RegisterPatientScreen(
+    idUsuario: Int,
     onBackClick: () -> Unit = {},
-    onRegisterClick: () -> Unit = {}
+    onRegisterSuccess: () -> Unit = {},
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var name by remember { mutableStateOf("") }
-    var birthDate by remember { mutableStateOf("") }
+    var birthDate by remember {
+        mutableStateOf(
+            TextFieldValue(text = "")
+        )
+    }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -64,6 +77,19 @@ fun RegisterPatientScreen(
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
     var confirmPasswordError by remember { mutableStateOf<String?>(null) }
+
+    val authState by authViewModel.authState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        authViewModel.limpiarEstado()
+    }
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.RegistroExitoso) {
+            authViewModel.limpiarEstado()
+            onRegisterSuccess()
+        }
+    }
 
     Scaffold(
         containerColor = Color.White,
@@ -114,7 +140,7 @@ fun RegisterPatientScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Spacer(Modifier.height(25.dp))
+            Spacer(Modifier.height(18.dp))
 
             Text(
                 text = "Datos personales",
@@ -122,7 +148,7 @@ fun RegisterPatientScreen(
                 color = Color(0xFF263238)
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
 
             OutlinedTextField(
                 value = name,
@@ -131,16 +157,34 @@ fun RegisterPatientScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 isError = nameError != null,
-                supportingText = {
-                    nameError?.let { Text(it) }
+                supportingText = nameError?.let { error ->
+                    { Text(error) }
                 }
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
 
             OutlinedTextField(
                 value = birthDate,
-                onValueChange = { birthDate = it },
+                onValueChange = { input ->
+                    val digits = input.text
+                        .filter { it.isDigit() }
+                        .take(8)
+
+                    val formattedDate = buildString {
+                        digits.forEachIndexed { index, char ->
+                            if (index == 2 || index == 4) {
+                                append('/')
+                            }
+                            append(char)
+                        }
+                    }
+
+                    birthDate = TextFieldValue(
+                        text = formattedDate,
+                        selection = TextRange(formattedDate.length)
+                    )
+                },
                 label = { Text("Fecha de nacimiento *") },
                 placeholder = { Text("DD/MM/AAAA") },
                 modifier = Modifier.fillMaxWidth(),
@@ -149,12 +193,12 @@ fun RegisterPatientScreen(
                     keyboardType = KeyboardType.Number
                 ),
                 isError = birthDateError != null,
-                supportingText = {
-                    birthDateError?.let { Text(it) }
+                supportingText = birthDateError?.let { error ->
+                    { Text(error) }
                 }
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
 
             OutlinedTextField(
                 value = phone,
@@ -166,12 +210,12 @@ fun RegisterPatientScreen(
                     keyboardType = KeyboardType.Phone
                 ),
                 isError = phoneError != null,
-                supportingText = {
-                    phoneError?.let { Text(it) }
+                supportingText = nameError?.let { error ->
+                    { Text(error) }
                 }
             )
 
-            Spacer(Modifier.height(25.dp))
+            Spacer(Modifier.height(18.dp))
 
             Text(
                 text = "Datos de acceso",
@@ -179,7 +223,7 @@ fun RegisterPatientScreen(
                 color = Color(0xFF263238)
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
 
             OutlinedTextField(
                 value = email,
@@ -191,12 +235,12 @@ fun RegisterPatientScreen(
                     keyboardType = KeyboardType.Email
                 ),
                 isError = emailError != null,
-                supportingText = {
-                    emailError?.let { Text(it) }
+                supportingText = nameError?.let { error ->
+                    { Text(error) }
                 }
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
 
             OutlinedTextField(
                 value = password,
@@ -206,12 +250,12 @@ fun RegisterPatientScreen(
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 isError = passwordError != null,
-                supportingText = {
-                    passwordError?.let { Text(it) }
+                supportingText = nameError?.let { error ->
+                    { Text(error) }
                 }
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
 
             OutlinedTextField(
                 value = confirmPassword,
@@ -221,12 +265,31 @@ fun RegisterPatientScreen(
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 isError = confirmPasswordError != null,
-                supportingText = {
-                    confirmPasswordError?.let { Text(it) }
+                supportingText = nameError?.let { error ->
+                    { Text(error) }
                 }
             )
 
             Spacer(Modifier.height(20.dp))
+
+            // Mostrar el estado del registro
+            when (val state = authState) {
+                AuthState.Loading -> {
+                    Text(
+                        text = "Registrando paciente...",
+                        color = RegisterBlue
+                    )
+                }
+
+                is AuthState.Error -> {
+                    Text(
+                        text = state.mensaje,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                else -> Unit
+            }
 
             Button(
                 onClick = {
@@ -244,17 +307,17 @@ fun RegisterPatientScreen(
                     }
 
                     // Validar fecha de nacimiento
-                    if (birthDate.isBlank()) {
+                    if (birthDate.text.isBlank()) {
                         birthDateError = "Ingresa la fecha de nacimiento."
-                    } else if (!isValidBirthDate(birthDate.trim())) {
+                    } else if (!isValidBirthDate(birthDate.text.trim())) {
                         birthDateError = "Ingresa una fecha válida (DD/MM/AAAA)."
                     }
 
                     // Validar teléfono únicamente si se proporcionó
                     val digits = phone.filter { it.isDigit() }
 
-                    if (digits.length != 10 ||
-                        !phone.matches(Regex("""^[\d\s()+-]+$"""))
+                    if (phone.isNotBlank() &&
+                        (digits.length != 10 || !phone.matches(Regex("""^[\d\s()+-]+$""")))
                     ) {
                         phoneError = "Ingresa un teléfono válido de 10 dígitos."
                     }
@@ -269,10 +332,18 @@ fun RegisterPatientScreen(
                     }
 
                     // Validar contraseña
+                    val passwordValida =
+                        password.length in 8..12 &&
+                                password.any { it.isUpperCase() } &&
+                                password.any { it.isLowerCase() } &&
+                                password.any { it.isDigit() } &&
+                                password.any { !it.isLetterOrDigit() }
+
                     if (password.isBlank()) {
                         passwordError = "Ingresa una contraseña."
-                    } else if (password.length < 8) {
-                        passwordError = "Debe tener al menos 8 caracteres."
+                    } else if (!passwordValida) {
+                        passwordError =
+                            "Usa 8–12 caracteres, mayúscula, minúscula, número y símbolo."
                     }
 
                     // Validar confirmación
@@ -291,9 +362,17 @@ fun RegisterPatientScreen(
                         passwordError == null &&
                         confirmPasswordError == null
                     ) {
-                        onRegisterClick()
+                        authViewModel.registrarPacienteConAsignacion(
+                            nombreCompleto = name,
+                            fechaNacimiento = birthDate.text,
+                            telefono = phone,
+                            correo = email,
+                            password = password,
+                            idUsuarioFisioterapeuta = idUsuario
+                        )
                     }
                 },
+                enabled = authState != AuthState.Loading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
