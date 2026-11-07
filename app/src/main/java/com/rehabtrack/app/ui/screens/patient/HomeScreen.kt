@@ -1,18 +1,14 @@
 package com.rehabtrack.app.ui.screens.patient
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -23,22 +19,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.rehabtrack.app.navigation.Routes
-import com.rehabtrack.app.ui.theme.ProgressBackground
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.rehabtrack.app.ui.components.PatientBottomBar
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rehabtrack.app.ui.viewmodel.HomeViewModel
+import com.rehabtrack.app.ui.viewmodel.HomeUiState
 
 @Composable
 fun HomeScreen(
-    navController: NavController
+    navController: NavController,
+    idUsuario: Int
 ) {
     val colors = MaterialTheme.colorScheme
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    val viewModel: HomeViewModel = viewModel()
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(idUsuario) {
+        viewModel.cargarInicio(idUsuario)
+    }
 
     Scaffold(
         containerColor = colors.background,
@@ -74,174 +81,143 @@ fun HomeScreen(
                 )
             }
 
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = 20.dp,
-                    vertical = 18.dp
-                )
-            ) {
-                // Saludo
-                Text(
-                    text = "Hola, Mario 👋",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.Bold
-                )
+            when (val estado = uiState) {
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Continúa con tu rehabilitación",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(26.dp))
-
-                // Programa
-                Text(
-                    text = "Tu programa",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(22.dp))
-
-                Text(
-                    text = "Rehabilitación de rodilla",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Text(
-                    text = "Programa actual",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onBackground
-                )
-
-                Spacer(modifier = Modifier.height(26.dp))
-
-                // Progreso
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = "Progreso 58%",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .background(
-                            ProgressBackground,
-                            RoundedCornerShape(4.dp)
-                        )
-                ) {
+                HomeUiState.Loading -> {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.58f)
-                            .height(4.dp)
-                            .background(
-                                colors.primary,
-                                RoundedCornerShape(4.dp)
-                            )
-                    )
+                            .fillMaxWidth()
+                            .padding(40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Cargando información...")
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Sesión de hoy
-                Text(
-                    text = "Sesión de hoy",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(22.dp))
-
-                Text(
-                    text = "Fortalecimiento de rodilla",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = "Hoy · 18:00",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant
-                )
-
-                Text(
-                    text = "3 ejercicios · 20 min",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant
-                )
-
-                // Acceso a la sesión
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = "Comenzar",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = colors.primary,
+                is HomeUiState.Error -> {
+                    Box(
                         modifier = Modifier
-                            .clickable {
-                                navController.navigate(
-                                    Routes.NextSession.route
-                                )
-                            }
-                            .padding(
-                                horizontal = 8.dp,
-                                vertical = 12.dp
-                            )
-                    )
+                            .fillMaxWidth()
+                            .padding(40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = estado.mensaje,
+                            color = colors.error
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                is HomeUiState.Success -> {
 
-                // Resumen
-                Text(
-                    text = "Resumen",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
+                    Column(
+                        modifier = Modifier.padding(
+                            horizontal = 20.dp,
+                            vertical = 18.dp
+                        )
+                    ) {
+                        // Saludo
+                        Text(
+                            text = "Hola, ${estado.paciente.nombre} 👋",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.Bold
+                        )
 
-                Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                Text(
-                    text = "3 sesiones recientes",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
+                        Text(
+                            text = "Continúa con tu rehabilitación",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurfaceVariant
+                        )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(26.dp))
 
-                Text(
-                    text = "Dolor: 3/10",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
+                        // Programa
+                        Text(
+                            text = "Tu programa",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(22.dp))
+
+                        Text(
+                            text = estado.programa?.nombre
+                                ?: "Aún no tienes un programa asignado",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        if (estado.programa != null) {
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Text(
+                                text = "Programa actual",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colors.onBackground
+                            )
+                        }
+
+                        // Progreso
+                        Spacer(modifier = Modifier.height(42.dp))
+
+                        Text(
+                            text = "Progreso",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "Tu avance aparecerá aquí cuando registremos tus sesiones.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurfaceVariant
+                        )
+
+                        // Sesión de hoy
+                        Spacer(modifier = Modifier.height(26.dp))
+
+                        Text(
+                            text = "Sesión de hoy",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Text(
+                            text = "No tienes una sesión programada.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colors.onSurfaceVariant
+                        )
+
+                        // Resumen
+                        Spacer(modifier = Modifier.height(26.dp))
+
+                        Text(
+                            text = "Resumen",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Text(
+                            text = "Todavía no hay sesiones registradas.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colors.onSurfaceVariant
+                        )
+
+                    }
+                }
             }
         }
     }

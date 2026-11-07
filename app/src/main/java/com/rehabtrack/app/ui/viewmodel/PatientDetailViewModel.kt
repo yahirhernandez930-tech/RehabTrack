@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.rehabtrack.app.data.local.entity.PacienteEntity
+import com.rehabtrack.app.data.local.entity.ProgramaEntity
+import com.rehabtrack.app.data.local.entity.SesionEntity
 import com.rehabtrack.app.data.repository.RehabRepositoryProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,15 +13,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.rehabtrack.app.data.local.entity.ProgramaEntity
 
 sealed interface PatientDetailUiState {
+
     data object Idle : PatientDetailUiState
+
     data object Loading : PatientDetailUiState
 
     data class Success(
         val paciente: PacienteEntity,
-        val programa: ProgramaEntity?
+        val programa: ProgramaEntity?,
+        val sesiones: List<SesionEntity> = emptyList()
     ) : PatientDetailUiState
 
     data class Error(
@@ -44,6 +48,9 @@ class PatientDetailViewModel(application: Application) :
     private val asignacionRepository =
         provider.asignacionRepository
 
+    private val sesionRepository =
+        provider.sesionRepository
+
     private val _uiState =
         MutableStateFlow<PatientDetailUiState>(
             PatientDetailUiState.Idle
@@ -51,6 +58,8 @@ class PatientDetailViewModel(application: Application) :
 
     val uiState: StateFlow<PatientDetailUiState> =
         _uiState.asStateFlow()
+
+    // Cargar información del paciente, programa y sesiones.
 
     fun cargarPaciente(
         idUsuario: Int,
@@ -101,12 +110,20 @@ class PatientDetailViewModel(application: Application) :
                     val programa =
                         programaRepository.obtenerProgramaActivo(idPaciente)
 
-                    Pair(paciente, programa)
+                    // 6. Recuperar las sesiones del programa.
+                    val sesiones = programa?.let {
+                        sesionRepository.obtenerSesionesPrograma(
+                            it.idPrograma
+                        )
+                    } ?: emptyList()
+
+                    Triple(paciente, programa, sesiones)
                 }
 
                 _uiState.value = PatientDetailUiState.Success(
                     paciente = resultado.first,
-                    programa = resultado.second
+                    programa = resultado.second,
+                    sesiones = resultado.third
                 )
 
             } catch (e: Exception) {
@@ -115,6 +132,169 @@ class PatientDetailViewModel(application: Application) :
                         ?: "No se pudo cargar la información del paciente."
                 )
             }
+        }
+    }
+
+    // Programar una nueva sesión.
+
+    fun programarSesion(
+        fecha: String,
+        hora: String
+    ) {
+        val estadoActual = _uiState.value
+
+        if (estadoActual !is PatientDetailUiState.Success) return
+
+        val programa = estadoActual.programa ?: run {
+            _uiState.value = PatientDetailUiState.Error(
+                "El paciente no tiene un programa activo."
+            )
+            return
+        }
+
+        if (fecha.isBlank() || hora.isBlank()) {
+            _uiState.value = PatientDetailUiState.Error(
+                "La fecha y la hora son obligatorias."
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    sesionRepository.insertar(
+                        SesionEntity(
+                            idPrograma = programa.idPrograma,
+                            fecha = fecha,
+                            hora = hora
+                        )
+                    )
+                }
+
+                cargarSesiones()
+
+            } catch (e: Exception) {
+                _uiState.value = PatientDetailUiState.Error(
+                    e.message ?: "No se pudo programar la sesión."
+                )
+            }
+        }
+    }
+
+    // Consultar nuevamente las sesiones.
+
+    fun cargarSesiones() {
+        val estadoActual = _uiState.value
+
+        if (estadoActual !is PatientDetailUiState.Success) return
+
+        val programa = estadoActual.programa ?: return
+
+        viewModelScope.launch {
+            try {
+                val sesiones = withContext(Dispatchers.IO) {
+                    sesionRepository.obtenerSesionesPrograma(
+                        programa.idPrograma
+                    )
+                }
+
+                actualizarSesionesEnEstado(sesiones)
+
+            } catch (e: Exception) {
+                _uiState.value = PatientDetailUiState.Error(
+                    e.message ?: "No se pudieron cargar las sesiones."
+                )
+            }
+        }
+    }
+
+    // Actualizar el estado de una sesión.
+
+    fun actualizarEstadoSesion(
+        idSesion: Int,
+        nuevoEstado: String
+    ) {
+        if (nuevoEstado.isBlank()) return
+
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+
+                    val sesion =
+                        sesionRepository.obtenerSesionPorId(idSesion)
+                            ?: throw Exception(
+                                "No se encontró la sesión."
+                            )
+
+                    sesionRepository.actualizar(
+                        sesion.copy(estado = nuevoEstado)
+                    )
+                }
+
+                cargarSesiones()
+
+            } catch (e: Exception) {
+                _uiState.value = PatientDetailUiState.Error(
+                    e.message ?: "No se pudo actualizar la sesión."
+                )
+            }
+        }
+    }
+
+    // Registrar el resultado de una sesión.
+
+    fun registrarResultadoSesion(
+        idSesion: Int,
+        nivelDolor: Int?,
+        observaciones: String?
+    ) {
+        if (nivelDolor != null && nivelDolor !in 0..10) {
+            _uiState.value = PatientDetailUiState.Error(
+                "El nivel de dolor debe estar entre 0 y 10."
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+
+                    val sesion =
+                        sesionRepository.obtenerSesionPorId(idSesion)
+                            ?: throw Exception(
+                                "No se encontró la sesión."
+                            )
+
+                    sesionRepository.actualizar(
+                        sesion.copy(
+                            nivelDolor = nivelDolor,
+                            observaciones = observaciones
+                        )
+                    )
+                }
+
+                cargarSesiones()
+
+            } catch (e: Exception) {
+                _uiState.value = PatientDetailUiState.Error(
+                    e.message
+                        ?: "No se pudo registrar el resultado de la sesión."
+                )
+            }
+        }
+    }
+
+    // Actualizar las sesiones sin modificar los demás datos.
+
+    private fun actualizarSesionesEnEstado(
+        sesiones: List<SesionEntity>
+    ) {
+        val estadoActual = _uiState.value
+
+        if (estadoActual is PatientDetailUiState.Success) {
+            _uiState.value = estadoActual.copy(
+                sesiones = sesiones
+            )
         }
     }
 }

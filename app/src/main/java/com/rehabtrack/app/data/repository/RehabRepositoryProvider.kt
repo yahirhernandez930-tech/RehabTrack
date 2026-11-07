@@ -31,6 +31,9 @@ class RehabRepositoryProvider(context: Context) {
     val programaEjercicioRepository =
         ProgramaEjercicioRepository(database.programaEjercicioDao())
 
+    val sesionRepository =
+        SesionRepository(database.sesionDao())
+
     suspend fun <T> ejecutarTransaccion(
         operacion: suspend () -> T
     ): T {

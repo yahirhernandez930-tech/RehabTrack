@@ -59,8 +59,20 @@ fun AppNavigation() {
             RegisterScreen(navController)
         }
 
-        composable(Routes.Home.route) {
-            HomeScreen(navController)
+        composable(
+            route = "${Routes.Home.route}/{idUsuario}"
+        ) { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                HomeScreen(
+                    navController = navController,
+                    idUsuario = idUsuario
+                )
+            }
         }
 
         composable(Routes.Progress.route) {

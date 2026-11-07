@@ -26,6 +26,9 @@ import com.rehabtrack.app.data.local.entity.ProgramaEjercicioEntity
 
 import androidx.room.withTransaction
 
+import com.rehabtrack.app.data.local.dao.SesionDao
+import com.rehabtrack.app.data.local.entity.SesionEntity
+
 @Database(
     entities = [
         UsuarioEntity::class,
@@ -34,9 +37,10 @@ import androidx.room.withTransaction
         AsignacionEntity::class,
         ProgramaEntity::class,
         EjercicioEntity::class,
-        ProgramaEjercicioEntity::class
+        ProgramaEjercicioEntity::class,
+        SesionEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class RehabDatabase : RoomDatabase() {
@@ -56,6 +60,8 @@ abstract class RehabDatabase : RoomDatabase() {
     abstract fun ejercicioDao(): EjercicioDao
 
     abstract fun programaEjercicioDao(): ProgramaEjercicioDao
+
+    abstract fun sesionDao(): SesionDao
 
     suspend fun <T> ejecutarTransaccion(
         operacion: suspend () -> T
@@ -139,6 +145,32 @@ abstract class RehabDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+
+            override fun migrate(db: SupportSQLiteDatabase) {
+
+                db.execSQL("""
+            CREATE TABLE IF NOT EXISTS sesiones (
+                idSesion INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                idPrograma INTEGER NOT NULL,
+                fecha TEXT NOT NULL,
+                hora TEXT NOT NULL,
+                estado TEXT NOT NULL,
+                nivelDolor INTEGER,
+                observaciones TEXT,
+                FOREIGN KEY(idPrograma)
+                    REFERENCES programas(idPrograma)
+                    ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """)
+
+                db.execSQL("""
+            CREATE INDEX IF NOT EXISTS index_sesiones_idPrograma
+            ON sesiones(idPrograma)
+        """)
+            }
+        }
+
         fun getDatabase(context: Context): RehabDatabase {
 
             return INSTANCE ?: synchronized(this) {
@@ -148,7 +180,10 @@ abstract class RehabDatabase : RoomDatabase() {
                     RehabDatabase::class.java,
                     "rehabtrack_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(
+                        MIGRATION_1_2,
+                        MIGRATION_2_3
+                    )
                     .build()
 
                 INSTANCE = instance

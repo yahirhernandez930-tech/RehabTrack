@@ -53,7 +53,8 @@ fun LoginScreen(
             val resultado = authState as AuthState.LoginExitoso
 
             val destino = when (resultado.rol) {
-                "PACIENTE" -> Routes.Home.route
+                "PACIENTE" ->
+                    "${Routes.Home.route}/${resultado.idUsuario}"
 
                 "FISIOTERAPEUTA" ->
                     "${Routes.PhysiotherapistHome.route}/${resultado.idUsuario}"
