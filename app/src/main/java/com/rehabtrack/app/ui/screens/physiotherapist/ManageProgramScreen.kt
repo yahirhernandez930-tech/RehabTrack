@@ -58,6 +58,10 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.navigation.NavController
 import com.rehabtrack.app.navigation.Routes
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rehabtrack.app.ui.viewmodel.ManageProgramViewModel
+import com.rehabtrack.app.ui.viewmodel.ManageProgramUiState
+import com.rehabtrack.app.ui.viewmodel.EjercicioAsignadoData
 
 private val ProgramBlue = Color(0xFF1976D2)
 private val ProgramText = Color(0xFF263238)
@@ -100,14 +104,27 @@ private val assignedExerciseListSaver =
 @Composable
 fun ManageProgramScreen(
     navController: NavController,
-    patientName: String = "María López"
+    idUsuario: Int,
+    idPaciente: Int
 ) {
+
+    val viewModel: ManageProgramViewModel = viewModel()
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(idUsuario, idPaciente) {
+        viewModel.cargarPaciente(idUsuario, idPaciente)
+    }
+
     var programName by remember {
         mutableStateOf("Rehabilitación de rodilla")
     }
 
     var duration by remember { mutableIntStateOf(12) }
     var durationMenuExpanded by remember { mutableStateOf(false) }
+
+    var datosInicialesCargados by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     val exercises = rememberSaveable(
         saver = assignedExerciseListSaver
@@ -116,6 +133,41 @@ fun ManageProgramScreen(
             AssignedExercise("Sentadilla asistida", 3, 10),
             AssignedExercise("Flexión de rodilla", 3, 8)
         )
+    }
+
+    LaunchedEffect(
+        uiState.cargandoPaciente,
+        uiState.programaExistente,
+        uiState.ejerciciosPrograma
+    ) {
+        if (
+            !uiState.cargandoPaciente &&
+            !datosInicialesCargados
+        ) {
+            val programa = uiState.programaExistente
+
+            if (programa != null) {
+
+                // Recuperar información del programa.
+                programName = programa.nombre
+                duration = programa.duracionSesiones
+
+                // Recuperar ejercicios y sus configuraciones.
+                exercises.clear()
+
+                exercises.addAll(
+                    uiState.ejerciciosPrograma.map { ejercicio ->
+                        AssignedExercise(
+                            name = ejercicio.nombre,
+                            series = ejercicio.series,
+                            repetitions = ejercicio.repeticiones
+                        )
+                    }
+                )
+            }
+
+            datosInicialesCargados = true
+        }
     }
 
     var showAddExerciseDialog by remember { mutableStateOf(false) }
@@ -129,6 +181,8 @@ fun ManageProgramScreen(
     var deletingExerciseIndex by remember { mutableIntStateOf(-1) }
 
     var showSaveDialog by remember { mutableStateOf(false) }
+    var showResultDialog by remember { mutableStateOf(false) }
+
     var validationMessage by remember { mutableStateOf("") }
 
     var exerciseValidationMessage by remember { mutableStateOf("") }
@@ -170,6 +224,15 @@ fun ManageProgramScreen(
         }
     }
 
+    LaunchedEffect(uiState.mensajeExito, uiState.mensajeError) {
+        if (
+            uiState.mensajeExito != null ||
+            uiState.mensajeError != null
+        ) {
+            showResultDialog = true
+        }
+    }
+
     Scaffold(
         containerColor = Color.White,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -201,7 +264,11 @@ fun ManageProgramScreen(
                 }
 
                 Text(
-                    text = "Crear programa",
+                    text = if (uiState.programaExistente != null) {
+                        "Gestionar programa"
+                    } else {
+                        "Crear programa"
+                    },
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -224,7 +291,11 @@ fun ManageProgramScreen(
                 FormLabel("Paciente")
 
                 Text(
-                    text = patientName,
+                    text = if (uiState.cargandoPaciente) {
+                        "Cargando paciente..."
+                    } else {
+                        uiState.nombrePaciente.ifBlank { "Paciente no disponible" }
+                    },
                     color = ProgramText,
                     fontSize = 14.sp,
                     modifier = Modifier
@@ -391,8 +462,13 @@ fun ManageProgramScreen(
                         validationMessage = when {
                             programName.isBlank() ->
                                 "Escribe el nombre del programa."
+
                             exercises.isEmpty() ->
                                 "Agrega al menos un ejercicio."
+
+                            uiState.nombrePaciente.isBlank() ->
+                                "No se puede guardar porque el paciente no está disponible."
+
                             else -> ""
                         }
 
@@ -400,6 +476,9 @@ fun ManageProgramScreen(
                             showSaveDialog = true
                         }
                     },
+                    enabled = !uiState.guardando &&
+                            !uiState.cargandoPaciente &&
+                            uiState.nombrePaciente.isNotBlank(),
                     modifier = Modifier
                         .fillMaxWidth(0.70f)
                         .height(43.dp)
@@ -410,7 +489,14 @@ fun ManageProgramScreen(
                     )
                 ) {
                     Text(
-                        text = "Guardar programa",
+                        text = when {
+                            uiState.guardando -> "Guardando..."
+
+                            uiState.programaExistente != null ->
+                                "Guardar cambios"
+
+                            else -> "Guardar programa"
+                        },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -589,19 +675,100 @@ fun ManageProgramScreen(
 
     if (showSaveDialog) {
         AlertDialog(
-            onDismissRequest = { showSaveDialog = false },
-            title = { Text("Programa listo") },
+            onDismissRequest = {
+                showSaveDialog = false
+            },
+            title = {
+                Text(
+                    if (uiState.programaExistente != null) {
+                        "Confirmar cambios"
+                    } else {
+                        "Confirmar programa"
+                    }
+                )
+            },
             text = {
                 Text(
-                    "El programa \"$programName\" para $patientName " +
-                            "está validado en pantalla. Todavía no se ha guardado " +
-                            "en una base de datos."
+                    if (uiState.programaExistente != null) {
+                        "¿Deseas guardar los cambios del programa " +
+                                "\"$programName\" para ${uiState.nombrePaciente}?"
+                    } else {
+                        "¿Deseas guardar el programa \"$programName\" " +
+                                "para ${uiState.nombrePaciente}?"
+                    }
+                )
+            },
+            confirmButton = {
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    TextButton(
+                        onClick = {
+                            viewModel.guardarPrograma(
+                                idUsuario = idUsuario,
+                                idPaciente = idPaciente,
+                                nombrePrograma = programName,
+                                duracionSesiones = duration,
+                                ejercicios = exercises.map { exercise ->
+                                    EjercicioAsignadoData(
+                                        nombre = exercise.name,
+                                        series = exercise.series,
+                                        repeticiones = exercise.repetitions
+                                    )
+                                }
+                            )
+                            showSaveDialog = false
+                        }
+                    ) {
+                        Text(
+                            if (uiState.programaExistente != null) {
+                                "Guardar cambios"
+                            } else {
+                                "Guardar"
+                            }
+                        )
+                    }
+
+                    TextButton(
+                        onClick = {
+                            showSaveDialog = false
+                        }
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+            }
+        )
+    }
+
+    if (showResultDialog) {
+        val error = uiState.mensajeError
+        val exito = uiState.mensajeExito
+
+        AlertDialog(
+            onDismissRequest = {
+                showResultDialog = false
+                viewModel.limpiarMensajes()
+            },
+            title = {
+                Text(
+                    if (error != null) {
+                        "Error al guardar"
+                    } else {
+                        "Programa guardado"
+                    }
+                )
+            },
+            text = {
+                Text(
+                    error ?: exito.orEmpty()
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showSaveDialog = false
+                        showResultDialog = false
+                        viewModel.limpiarMensajes()
                     }
                 ) {
                     Text("Aceptar")
@@ -609,6 +776,7 @@ fun ManageProgramScreen(
             }
         )
     }
+
 }
 
 @Composable

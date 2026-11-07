@@ -306,18 +306,24 @@ fun AppNavigation() {
         }
 
         composable(
-            route = "${Routes.ManageProgram.route}/{patientName}"
+            route = "${Routes.ManageProgram.route}/{idUsuario}/{idPaciente}"
         ) { backStackEntry ->
 
-            val patientName = java.net.URLDecoder.decode(
-                backStackEntry.arguments?.getString("patientName") ?: "Paciente",
-                "UTF-8"
-            )
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
 
-            ManageProgramScreen(
-                navController = navController,
-                patientName = patientName
-            )
+            val idPaciente = backStackEntry.arguments
+                ?.getString("idPaciente")
+                ?.toIntOrNull()
+
+            if (idUsuario != null && idPaciente != null) {
+                ManageProgramScreen(
+                    navController = navController,
+                    idUsuario = idUsuario,
+                    idPaciente = idPaciente
+                )
+            }
         }
 
         composable(Routes.SelectExercises.route) {

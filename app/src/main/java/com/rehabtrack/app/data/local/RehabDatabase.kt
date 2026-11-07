@@ -24,6 +24,8 @@ import com.rehabtrack.app.data.local.entity.ProgramaEntity
 import com.rehabtrack.app.data.local.entity.EjercicioEntity
 import com.rehabtrack.app.data.local.entity.ProgramaEjercicioEntity
 
+import androidx.room.withTransaction
+
 @Database(
     entities = [
         UsuarioEntity::class,
@@ -54,6 +56,14 @@ abstract class RehabDatabase : RoomDatabase() {
     abstract fun ejercicioDao(): EjercicioDao
 
     abstract fun programaEjercicioDao(): ProgramaEjercicioDao
+
+    suspend fun <T> ejecutarTransaccion(
+        operacion: suspend () -> T
+    ): T {
+        return withTransaction {
+            operacion()
+        }
+    }
 
     companion object {
 

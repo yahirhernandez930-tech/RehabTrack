@@ -260,11 +260,76 @@ fun PatientDetailScreen(
 
                             Spacer(modifier = Modifier.height(7.dp))
 
-                            Text(
-                                text = "Todavía no hay un programa registrado para este paciente.",
-                                color = DetailSecondary,
-                                fontSize = 12.sp
-                            )
+                            if (state.programa == null) {
+
+                                Text(
+                                    text = "Todavía no hay un programa registrado para este paciente.",
+                                    color = DetailSecondary,
+                                    fontSize = 12.sp
+                                )
+
+                            } else {
+
+                                Column {
+                                    Text(
+                                        text = state.programa.nombre,
+                                        color = DetailText,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+
+                                    Spacer(modifier = Modifier.height(7.dp))
+
+                                    Text(
+                                        text = "Duración: ${state.programa.duracionSesiones} sesiones",
+                                        color = DetailSecondary,
+                                        fontSize = 12.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(5.dp))
+
+                                    Text(
+                                        text = "Estado: ${state.programa.estado}",
+                                        color = DetailSecondary,
+                                        fontSize = 12.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(5.dp))
+
+                                    Text(
+                                        text = "Fecha de creación: ${state.programa.fechaCreacion}",
+                                        color = DetailSecondary,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(15.dp))
+
+                            Button(
+                                onClick = {
+                                    navController.navigate(
+                                        "${com.rehabtrack.app.navigation.Routes.ManageProgram.route}/$idUsuario/$idPaciente"
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(43.dp),
+                                shape = RoundedCornerShape(9.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = DetailBlue
+                                )
+                            ) {
+                                Text(
+                                    text = if (state.programa == null) {
+                                        "Crear programa"
+                                    } else {
+                                        "Gestionar programa"
+                                    },
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(25.dp))

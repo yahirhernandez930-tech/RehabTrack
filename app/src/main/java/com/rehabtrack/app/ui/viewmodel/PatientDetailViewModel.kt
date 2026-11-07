@@ -11,13 +11,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.rehabtrack.app.data.local.entity.ProgramaEntity
 
 sealed interface PatientDetailUiState {
     data object Idle : PatientDetailUiState
     data object Loading : PatientDetailUiState
 
     data class Success(
-        val paciente: PacienteEntity
+        val paciente: PacienteEntity,
+        val programa: ProgramaEntity?
     ) : PatientDetailUiState
 
     data class Error(
@@ -32,6 +34,9 @@ class PatientDetailViewModel(application: Application) :
 
     private val pacienteRepository =
         provider.pacienteRepository
+
+    private val programaRepository =
+        provider.programaRepository
 
     private val fisioterapeutaRepository =
         provider.fisioterapeutaRepository
@@ -57,7 +62,7 @@ class PatientDetailViewModel(application: Application) :
 
         viewModelScope.launch {
             try {
-                val paciente = withContext(Dispatchers.IO) {
+                val resultado = withContext(Dispatchers.IO) {
 
                     // 1. Obtener el perfil del fisioterapeuta.
                     val fisioterapeuta =
@@ -67,7 +72,7 @@ class PatientDetailViewModel(application: Application) :
                                 "No se encontró el perfil del fisioterapeuta."
                             )
 
-                    // 2. Comprobar la asignación activa del paciente.
+                    // 2. Comprobar la asignación activa.
                     val asignacion =
                         asignacionRepository
                             .obtenerAsignacionActiva(idPaciente)
@@ -86,14 +91,23 @@ class PatientDetailViewModel(application: Application) :
                     }
 
                     // 4. Recuperar los datos del paciente.
-                    pacienteRepository.obtenerPacientePorId(idPaciente)
-                        ?: throw Exception(
-                            "No se encontró la información del paciente."
-                        )
+                    val paciente =
+                        pacienteRepository.obtenerPacientePorId(idPaciente)
+                            ?: throw Exception(
+                                "No se encontró la información del paciente."
+                            )
+
+                    // 5. Recuperar su programa activo.
+                    val programa =
+                        programaRepository.obtenerProgramaActivo(idPaciente)
+
+                    Pair(paciente, programa)
                 }
 
-                _uiState.value =
-                    PatientDetailUiState.Success(paciente)
+                _uiState.value = PatientDetailUiState.Success(
+                    paciente = resultado.first,
+                    programa = resultado.second
+                )
 
             } catch (e: Exception) {
                 _uiState.value = PatientDetailUiState.Error(
