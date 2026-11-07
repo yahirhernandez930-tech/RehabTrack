@@ -214,7 +214,15 @@ class PatientDetailViewModel(application: Application) :
         idSesion: Int,
         nuevoEstado: String
     ) {
-        if (nuevoEstado.isBlank()) return
+        val estadosPermitidos = listOf(
+            "Finalizada",
+            "No asistió",
+            "Cancelada"
+        )
+
+        if (nuevoEstado !in estadosPermitidos) {
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -226,8 +234,17 @@ class PatientDetailViewModel(application: Application) :
                                 "No se encontró la sesión."
                             )
 
+                    // Solo se pueden modificar sesiones pendientes.
+                    if (sesion.estado != "Pendiente") {
+                        throw Exception(
+                            "Esta sesión ya no puede modificarse."
+                        )
+                    }
+
                     sesionRepository.actualizar(
-                        sesion.copy(estado = nuevoEstado)
+                        sesion.copy(
+                            estado = nuevoEstado
+                        )
                     )
                 }
 
@@ -235,7 +252,8 @@ class PatientDetailViewModel(application: Application) :
 
             } catch (e: Exception) {
                 _uiState.value = PatientDetailUiState.Error(
-                    e.message ?: "No se pudo actualizar la sesión."
+                    e.message
+                        ?: "No se pudo actualizar el estado de la sesión."
                 )
             }
         }
