@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.rehabtrack.app.data.local.entity.SesionEntity
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState
@@ -19,7 +23,8 @@ sealed interface HomeUiState {
     data class Success(
         val paciente: PacienteEntity,
         val programa: ProgramaEntity?,
-        val ejercicios: List<EjercicioInicioData>
+        val ejercicios: List<EjercicioInicioData>,
+        val proximaSesion: SesionEntity?
     ) : HomeUiState
 
     data class Error(
@@ -47,6 +52,9 @@ class HomeViewModel(application: Application) :
 
     private val programaEjercicioRepository =
         provider.programaEjercicioRepository
+
+    private val sesionRepository =
+        provider.sesionRepository
 
     private val _uiState =
         MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -98,13 +106,47 @@ class HomeViewModel(application: Application) :
                         emptyList()
                     }
 
-                    Triple(paciente, programa, ejercicios)
+                    // Obtener la próxima sesión pendiente
+                    val proximaSesion = if (programa != null) {
+
+                        val sesionesPendientes =
+                            sesionRepository.obtenerSesionesPendientes(
+                                programa.idPrograma
+                            )
+
+                        val calendario = Calendar.getInstance()
+
+                        val fechaActual = SimpleDateFormat(
+                            "yyyy-MM-dd",
+                            Locale.US
+                        ).format(calendario.time)
+
+                        val horaActual = SimpleDateFormat(
+                            "HH:mm",
+                            Locale.US
+                        ).format(calendario.time)
+
+                        sesionesPendientes.firstOrNull { sesion ->
+
+                            sesion.fecha > fechaActual ||
+                                    (sesion.fecha == fechaActual &&
+                                            sesion.hora >= horaActual)
+
+                        }
+
+                    } else {
+                        null
+                    }
+
+                // Devolver los datos del paciente, programa, ejercicios y sesión
+                    Triple(paciente, programa, ejercicios) to proximaSesion
                 }
 
                 _uiState.value = HomeUiState.Success(
-                    paciente = resultado.first,
-                    programa = resultado.second,
-                    ejercicios = resultado.third
+                    paciente = resultado.first.first,
+                    programa = resultado.first.second,
+                    ejercicios = resultado.first.third,
+                    proximaSesion = resultado.second
                 )
 
             } catch (e: Exception) {

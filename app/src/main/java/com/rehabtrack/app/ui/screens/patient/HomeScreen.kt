@@ -30,6 +30,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rehabtrack.app.ui.viewmodel.HomeViewModel
 import com.rehabtrack.app.ui.viewmodel.HomeUiState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.text.style.TextAlign
+import com.rehabtrack.app.navigation.Routes
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -42,6 +53,25 @@ fun HomeScreen(
 
     val viewModel: HomeViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsState()
+
+    val formatoFechaHora = SimpleDateFormat(
+        "yyyy-MM-dd HH:mm",
+        Locale.US
+    )
+
+    val ahora = Date()
+
+    val puedeComenzar = (uiState as? HomeUiState.Success)
+        ?.proximaSesion
+        ?.let { sesion ->
+            sesion.estado == "Pendiente" &&
+                    runCatching {
+                        val fechaSesion = formatoFechaHora.parse(
+                            "${sesion.fecha} ${sesion.hora}"
+                        )
+                        fechaSesion != null && !fechaSesion.after(ahora)
+                    }.getOrDefault(false)
+        } ?: false
 
     LaunchedEffect(idUsuario) {
         viewModel.cargarInicio(idUsuario)
@@ -180,11 +210,11 @@ fun HomeScreen(
                             color = colors.onSurfaceVariant
                         )
 
-                        // Sesión de hoy
+                        // Próxima sesión
                         Spacer(modifier = Modifier.height(26.dp))
 
                         Text(
-                            text = "Sesión de hoy",
+                            text = "Próxima sesión",
                             style = MaterialTheme.typography.titleMedium,
                             color = colors.onBackground,
                             fontWeight = FontWeight.SemiBold
@@ -192,11 +222,83 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.height(18.dp))
 
-                        Text(
-                            text = "No tienes una sesión programada.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = colors.onSurfaceVariant
-                        )
+                        if (estado.proximaSesion != null) {
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = colors.surface
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = CardDefaults.cardElevation(
+                                    defaultElevation = 2.dp
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(18.dp)
+                                ) {
+                                    Text(
+                                        text = "Sesión programada",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = colors.onSurface,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Text(
+                                        text = "Fecha: ${estado.proximaSesion.fecha}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = colors.onSurface
+                                    )
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Text(
+                                        text = "Hora: ${estado.proximaSesion.hora}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = colors.onSurface
+                                    )
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Text(
+                                        text = "Estado: ${estado.proximaSesion.estado}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = colors.onSurfaceVariant
+                                    )
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    Button(
+                                        onClick = {
+                                            navController.navigate(
+                                                "${Routes.SessionConfirmation.route}/${estado.proximaSesion.idSesion}"
+                                            )
+                                        },
+                                        enabled = puedeComenzar,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = colors.primary
+                                        )
+                                    ) {
+                                        Text("Comenzar sesión")
+                                    }
+                                }
+                            }
+
+                        } else {
+
+                            Text(
+                                text = "No tienes próximas sesiones programadas.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = colors.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
 
                         // Resumen
                         Spacer(modifier = Modifier.height(26.dp))

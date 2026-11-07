@@ -30,6 +30,10 @@ import com.rehabtrack.app.ui.screens.physiotherapist.SelectExercisesScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.PatientsScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.RegisterPatientScreen
 import com.rehabtrack.app.ui.screens.physiotherapist.SelectPatientScreen
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rehabtrack.app.ui.viewmodel.NextSessionViewModel
 
 @Composable
 fun AppNavigation() {
@@ -129,33 +133,82 @@ fun AppNavigation() {
             ChangePasswordScreen(navController)
         }
 
-        composable(Routes.NextSession.route) {
-            NextSessionScreen(
-                navController = navController,
-                onStartSession = {
-                    ejercicioActual = 0
-                    navController.navigate(Routes.SessionConfirmation.route) {
-                        popUpTo(Routes.NextSession.route) {
-                            inclusive = false
+        composable(
+            route = "${Routes.NextSession.route}/{idSesion}"
+        ) { backStackEntry ->
+
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
+
+            if (idSesion != null) {
+
+                val viewModel: NextSessionViewModel = viewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
+                LaunchedEffect(idSesion) {
+                    viewModel.cargarSesion(idSesion)
+                }
+
+                NextSessionScreen(
+                    navController = navController,
+                    uiState = uiState,
+                    onStartSession = {
+                        ejercicioActual = 0
+                        navController.navigate("${Routes.SessionConfirmation.route}/$idSesion") {
+                            popUpTo(Routes.NextSession.route) {
+                                inclusive = false
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
 
-        composable(Routes.SessionConfirmation.route) {
-            SessionConfirmationScreen(navController)
+        composable(
+            route = "${Routes.SessionConfirmation.route}/{idSesion}"
+        ) { backStackEntry ->
+
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
+
+            if (idSesion != null) {
+                SessionConfirmationScreen(
+                    navController = navController,
+                    idSesion = idSesion
+                )
+            }
         }
 
-        composable(Routes.ExerciseInfo.route) {
-            ExerciseInfoScreen(
-                navController = navController,
-                nombreEjercicio = ejercicios[ejercicioActual]
-            )
+        composable(
+            route = "${Routes.ExerciseInfo.route}/{idSesion}"
+        ) { backStackEntry ->
+
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
+
+            if (idSesion != null) {
+                ExerciseInfoScreen(
+                    navController = navController,
+                    nombreEjercicio = ejercicios[ejercicioActual],
+                    idSesion = idSesion
+                )
+            }
         }
 
-        composable(Routes.Exercise.route) {
-            ExerciseExecutionScreen(navController)
+        composable(
+            route = "${Routes.Exercise.route}/{idSesion}"
+        ) { backStackEntry ->
+
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
+
+            if (idSesion != null) {
+                ExerciseExecutionScreen(navController)
+            }
         }
 
         composable(Routes.ExerciseConfirmation.route) {

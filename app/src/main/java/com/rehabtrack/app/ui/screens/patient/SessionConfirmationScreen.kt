@@ -35,7 +35,10 @@ import androidx.navigation.NavController
 import com.rehabtrack.app.navigation.Routes
 
 @Composable
-fun SessionConfirmationScreen(navController: NavController) {
+fun SessionConfirmationScreen(
+    navController: NavController,
+    idSesion: Int
+) {
     val colors = MaterialTheme.colorScheme
 
     Scaffold(
@@ -92,7 +95,7 @@ fun SessionConfirmationScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(56.dp))
 
                 Text(
-                    text = "Sesión 8",
+                    text = "Sesión $idSesion",
                     style = MaterialTheme.typography.headlineSmall,
                     color = colors.onBackground,
                     fontWeight = FontWeight.Bold
@@ -120,7 +123,7 @@ fun SessionConfirmationScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        navController.navigate(Routes.ExerciseInfo.route)
+                        navController.navigate("${Routes.ExerciseInfo.route}/$idSesion")
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.68f)

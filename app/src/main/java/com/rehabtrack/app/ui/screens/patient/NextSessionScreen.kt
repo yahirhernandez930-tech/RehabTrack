@@ -39,10 +39,12 @@ import androidx.navigation.NavController
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import com.rehabtrack.app.ui.viewmodel.NextSessionUiState
 
 @Composable
 fun NextSessionScreen(
     navController: NavController,
+    uiState: NextSessionUiState,
     onStartSession: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -101,101 +103,92 @@ fun NextSessionScreen(
             ) {
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "Sesión 8",
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
+                when (val estado = uiState) {
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "14/10/2026 · 18:00",
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Aviso de sesión programada
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFE3F2FD)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccessTime,
-                                contentDescription = null,
-                                tint = colors.primary
-                            )
-
-                            Text(
-                                text = "Sesión programada",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = colors.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
+                    NextSessionUiState.Loading -> {
                         Text(
-                            text = "La sesión estará disponible el 14/10/2026 a las 18:00.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onSurface,
-                            fontWeight = FontWeight.Medium
+                            text = "Cargando información de la sesión...",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            color = colors.onSurfaceVariant
                         )
                     }
+
+                    is NextSessionUiState.Error -> {
+                        Text(
+                            text = estado.mensaje,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            color = colors.error
+                        )
+                    }
+
+                    is NextSessionUiState.Success -> {
+
+                        val sesion = estado.sesion
+
+                        Text(
+                            text = "Sesión ${sesion.idSesion}",
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "${sesion.fecha} · ${sesion.hora}",
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFE3F2FD)
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AccessTime,
+                                        contentDescription = null,
+                                        tint = colors.primary
+                                    )
+
+                                    Text(
+                                        text = "Sesión ${sesion.estado}",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = colors.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(
+                                    text = "Fecha programada: ${sesion.fecha} a las ${sesion.hora}.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = colors.onSurface,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Ejercicios",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 12.dp, bottom = 12.dp)
-                )
-
-                ExercisePreviewCard(
-                    name = "Sentadilla asistida",
-                    series = 3,
-                    repetitions = 10
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ExercisePreviewCard(
-                    name = "Flexión de rodilla",
-                    series = 3,
-                    repetitions = 8
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ExercisePreviewCard(
-                    name = "Extensión de rodilla",
-                    series = 2,
-                    repetitions = 10
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
             // Botón inferior
@@ -209,6 +202,7 @@ fun NextSessionScreen(
             ) {
                 Button(
                     onClick = onStartSession,
+                    enabled = uiState is NextSessionUiState.Success,
                     modifier = Modifier
                         .fillMaxWidth(0.68f)
                         .height(48.dp),
