@@ -193,6 +193,8 @@ fun AppNavigation() {
 
             if (idUsuario != null) {
                 PhysiotherapistHomeScreen(
+                    idUsuario = idUsuario,
+
                     onHomeClick = {
                         navController.navigate(
                             "${Routes.PhysiotherapistHome.route}/$idUsuario"
@@ -209,13 +211,6 @@ fun AppNavigation() {
                     },
                     onProfileClick = {
                         // Pendiente de implementar.
-                    },
-                    onPatientClick = { nombrePaciente ->
-                        navController.navigate(
-                            "${Routes.PatientDetail.route}/${
-                                java.net.URLEncoder.encode(nombrePaciente, "UTF-8")
-                            }"
-                        )
                     }
                 )
             }
@@ -251,7 +246,7 @@ fun AppNavigation() {
                     },
                     onPatientClick = { idPaciente ->
                         navController.navigate(
-                            "${Routes.PatientDetail.route}/$idPaciente"
+                            "${Routes.PatientDetail.route}/$idUsuario/$idPaciente"
                         )
                     },
                     onSelectExistingPatientClick = {
@@ -290,32 +285,24 @@ fun AppNavigation() {
         }
 
         composable(
-            route = "${Routes.PatientDetail.route}/{patientName}"
+            route = "${Routes.PatientDetail.route}/{idUsuario}/{idPaciente}"
         ) { backStackEntry ->
 
-            val patientName = java.net.URLDecoder.decode(
-                backStackEntry.arguments?.getString("patientName") ?: "Paciente",
-                "UTF-8"
-            )
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
 
-            PatientDetailScreen(
-                navController = navController,
-                patientName = patientName,
-                onManageProgram = {
-                    navController.navigate(
-                        "${Routes.ManageProgram.route}/${
-                            java.net.URLEncoder.encode(patientName, "UTF-8")
-                        }"
-                    )
-                },
-                onViewHistory = {
-                    navController.navigate(
-                        "${Routes.History.route}/${
-                                java.net.URLEncoder.encode(patientName, "UTF-8")
-                        }"
-                    )
-                }
-            )
+            val idPaciente = backStackEntry.arguments
+                ?.getString("idPaciente")
+                ?.toIntOrNull()
+
+            if (idUsuario != null && idPaciente != null) {
+                PatientDetailScreen(
+                    navController = navController,
+                    idUsuario = idUsuario,
+                    idPaciente = idPaciente
+                )
+            }
         }
 
         composable(

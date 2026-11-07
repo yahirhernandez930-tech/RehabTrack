@@ -4,24 +4,37 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
+
 import com.rehabtrack.app.data.local.dao.AsignacionDao
 import com.rehabtrack.app.data.local.dao.FisioterapeutaDao
 import com.rehabtrack.app.data.local.dao.PacienteDao
 import com.rehabtrack.app.data.local.dao.UsuarioDao
 import com.rehabtrack.app.data.local.dao.AuthDao
+import com.rehabtrack.app.data.local.dao.ProgramaDao
+import com.rehabtrack.app.data.local.dao.EjercicioDao
+import com.rehabtrack.app.data.local.dao.ProgramaEjercicioDao
+
 import com.rehabtrack.app.data.local.entity.AsignacionEntity
 import com.rehabtrack.app.data.local.entity.FisioterapeutaEntity
 import com.rehabtrack.app.data.local.entity.PacienteEntity
 import com.rehabtrack.app.data.local.entity.UsuarioEntity
+import com.rehabtrack.app.data.local.entity.ProgramaEntity
+import com.rehabtrack.app.data.local.entity.EjercicioEntity
+import com.rehabtrack.app.data.local.entity.ProgramaEjercicioEntity
 
 @Database(
     entities = [
         UsuarioEntity::class,
         PacienteEntity::class,
         FisioterapeutaEntity::class,
-        AsignacionEntity::class
+        AsignacionEntity::class,
+        ProgramaEntity::class,
+        EjercicioEntity::class,
+        ProgramaEjercicioEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class RehabDatabase : RoomDatabase() {
@@ -36,10 +49,85 @@ abstract class RehabDatabase : RoomDatabase() {
 
     abstract fun authDao(): AuthDao
 
+    abstract fun programaDao(): ProgramaDao
+
+    abstract fun ejercicioDao(): EjercicioDao
+
+    abstract fun programaEjercicioDao(): ProgramaEjercicioDao
+
     companion object {
 
         @Volatile
         private var INSTANCE: RehabDatabase? = null
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+
+            override fun migrate(db: SupportSQLiteDatabase) {
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS programas (
+                        idPrograma INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        idPaciente INTEGER NOT NULL,
+                        idFisioterapeuta INTEGER NOT NULL,
+                        nombre TEXT NOT NULL,
+                        duracionSesiones INTEGER NOT NULL,
+                        estado TEXT NOT NULL,
+                        fechaCreacion TEXT NOT NULL,
+                        FOREIGN KEY(idPaciente)
+                            REFERENCES pacientes(idPaciente)
+                            ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(idFisioterapeuta)
+                            REFERENCES fisioterapeutas(idFisioterapeuta)
+                            ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """)
+
+                db.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_programas_idPaciente
+                    ON programas(idPaciente)
+                """)
+
+                db.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_programas_idFisioterapeuta
+                    ON programas(idFisioterapeuta)
+                """)
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS ejercicios (
+                        idEjercicio INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        nombre TEXT NOT NULL,
+                        descripcion TEXT NOT NULL,
+                        instrucciones TEXT NOT NULL
+                    )
+                """)
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS programa_ejercicios (
+                        idProgramaEjercicio INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        idPrograma INTEGER NOT NULL,
+                        idEjercicio INTEGER NOT NULL,
+                        series INTEGER NOT NULL,
+                        repeticiones INTEGER NOT NULL,
+                        FOREIGN KEY(idPrograma)
+                            REFERENCES programas(idPrograma)
+                            ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(idEjercicio)
+                            REFERENCES ejercicios(idEjercicio)
+                            ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """)
+
+                db.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_programa_ejercicios_idPrograma
+                    ON programa_ejercicios(idPrograma)
+                """)
+
+                db.execSQL("""
+                    CREATE INDEX IF NOT EXISTS index_programa_ejercicios_idEjercicio
+                    ON programa_ejercicios(idEjercicio)
+                """)
+            }
+        }
 
         fun getDatabase(context: Context): RehabDatabase {
 
@@ -49,7 +137,9 @@ abstract class RehabDatabase : RoomDatabase() {
                     context.applicationContext,
                     RehabDatabase::class.java,
                     "rehabtrack_database"
-                ).build()
+                )
+                    .addMigrations(MIGRATION_1_2)
+                    .build()
 
                 INSTANCE = instance
 

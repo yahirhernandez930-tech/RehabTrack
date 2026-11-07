@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +32,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rehabtrack.app.ui.components.PhysiotherapistBottomBar
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rehabtrack.app.ui.viewmodel.PhysiotherapistHomeViewModel
+import com.rehabtrack.app.ui.viewmodel.PhysiotherapistHomeUiState
 
 private val RehabBlue = Color(0xFF1976D2)
 private val RehabText = Color(0xFF263238)
@@ -41,64 +46,20 @@ private val RehabBorder = Color(0xFFCBD5E1)
 private val RehabLightBlue = Color(0xFFE3F2FD)
 private val RehabOrange = Color(0xFFF9A825)
 
-private data class UpcomingSession(
-    val patientName: String,
-    val treatment: String,
-    val time: String
-)
-
-private data class PatientReview(
-    val patientName: String,
-    val treatment: String,
-    val reason: String
-)
-
 @Composable
 fun PhysiotherapistHomeScreen(
-    onPatientClick: (String) -> Unit = {},
+    idUsuario: Int,
+    onPatientClick: (Int) -> Unit = {},
     onHomeClick: () -> Unit = {},
     onPatientsClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    homeViewModel: PhysiotherapistHomeViewModel = viewModel()
 ) {
 
-    val upcomingSessions = remember {
-        listOf(
-            UpcomingSession(
-                patientName = "María López",
-                treatment = "Rehabilitación de rodilla",
-                time = "10:00 AM"
-            ),
-            UpcomingSession(
-                patientName = "Carlos Pérez",
-                treatment = "Rehabilitación de rodilla",
-                time = "11:30 AM"
-            ),
-            UpcomingSession(
-                patientName = "Ana Martínez",
-                treatment = "Rehabilitación de hombro",
-                time = "01:00 PM"
-            )
-        )
-    }
+    val uiState by homeViewModel.uiState.collectAsState()
 
-    val patientsToReview = remember {
-        listOf(
-            PatientReview(
-                patientName = "Carlos Pérez",
-                treatment = "Rehabilitación de rodilla",
-                reason = "Revisar progreso"
-            ),
-            PatientReview(
-                patientName = "José Hernández",
-                treatment = "Rehabilitación lumbar",
-                reason = "Seguimiento pendiente"
-            ),
-            PatientReview(
-                patientName = "Ana Martínez",
-                treatment = "Rehabilitación de hombro",
-                reason = "Actualizar evaluación"
-            )
-        )
+    LaunchedEffect(idUsuario) {
+        homeViewModel.cargarResumen(idUsuario)
     }
 
     Scaffold(
@@ -177,13 +138,21 @@ fun PhysiotherapistHomeScreen(
                 ) {
                     SummaryCard(
                         title = "Pacientes activos",
-                        value = "12",
+                        value = when (val state = uiState) {
+                            is PhysiotherapistHomeUiState.Success ->
+                                state.pacientesActivos.toString()
+
+                            PhysiotherapistHomeUiState.Loading,
+                            PhysiotherapistHomeUiState.Idle -> "..."
+
+                            is PhysiotherapistHomeUiState.Error -> "—"
+                        },
                         modifier = Modifier.weight(1f)
                     )
 
                     SummaryCard(
                         title = "Sesiones de hoy",
-                        value = "4",
+                        value = "—",
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -196,13 +165,13 @@ fun PhysiotherapistHomeScreen(
                 ) {
                     SummaryCard(
                         title = "Requieren revisión",
-                        value = patientsToReview.size.toString(),
+                        value = "—",
                         modifier = Modifier.weight(1f)
                     )
 
                     SummaryCard(
                         title = "Programas activos",
-                        value = "8",
+                        value = "—",
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -219,23 +188,11 @@ fun PhysiotherapistHomeScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                if (upcomingSessions.isEmpty()) {
-                    Text(
-                        text = "No tienes sesiones programadas.",
-                        color = RehabSecondary,
-                        fontSize = 14.sp
-                    )
-                } else {
-                    upcomingSessions.forEach { session ->
-                        UpcomingSessionCard(
-                            session = session,
-                            onClick = {
-                                onPatientClick(session.patientName)
-                            }
-                        )
-                        Spacer(Modifier.height(12.dp))
-                    }
-                }
+                Text(
+                    text = "No tienes sesiones programadas.",
+                    color = RehabSecondary,
+                    fontSize = 14.sp
+                )
 
                 Spacer(Modifier.height(18.dp))
 
@@ -253,8 +210,8 @@ fun PhysiotherapistHomeScreen(
                     )
 
                     Text(
-                        text = "${patientsToReview.size} pendientes",
-                        color = RehabOrange,
+                        text = "Sin registros",
+                        color = RehabSecondary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -262,24 +219,11 @@ fun PhysiotherapistHomeScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                if (patientsToReview.isEmpty()) {
-                    Text(
-                        text = "No tienes revisiones pendientes.",
-                        color = RehabSecondary,
-                        fontSize = 14.sp
-                    )
-                } else {
-                    patientsToReview.forEach { patient ->
-                        PatientReviewCard(
-                            patient = patient,
-                            onClick = {
-                                onPatientClick(patient.patientName)
-                            }
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-                    }
-                }
+                Text(
+                    text = "No hay pacientes pendientes de revisión.",
+                    color = RehabSecondary,
+                    fontSize = 14.sp
+                )
 
                 Spacer(Modifier.height(18.dp))
 
@@ -355,102 +299,6 @@ private fun SummaryCard(
             color = RehabText,
             fontSize = 27.sp,
             fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun UpcomingSessionCard(
-    session: UpcomingSession,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                1.dp,
-                RehabBorder,
-                RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = session.patientName,
-                color = RehabText,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(Modifier.height(5.dp))
-
-            Text(
-                text = session.treatment,
-                color = RehabSecondary,
-                fontSize = 13.sp
-            )
-        }
-
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = session.time,
-                color = RehabBlue,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(Modifier.height(5.dp))
-
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Ver detalles",
-                tint = RehabText,
-                modifier = Modifier.size(23.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun PatientReviewCard(
-    patient: PatientReview,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                1.dp,
-                RehabBorder,
-                RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(14.dp)
-    ) {
-        Text(
-            text = patient.patientName,
-            color = RehabText,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Spacer(Modifier.height(5.dp))
-
-        Text(
-            text = patient.treatment,
-            color = RehabSecondary,
-            fontSize = 13.sp
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text = patient.reason,
-            color = RehabOrange,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
         )
     }
 }
