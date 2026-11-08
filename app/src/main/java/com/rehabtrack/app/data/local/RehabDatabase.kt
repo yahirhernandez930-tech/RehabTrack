@@ -29,6 +29,10 @@ import androidx.room.withTransaction
 import com.rehabtrack.app.data.local.dao.SesionDao
 import com.rehabtrack.app.data.local.entity.SesionEntity
 
+import com.rehabtrack.app.data.local.dao.RegistroSerieDao
+import com.rehabtrack.app.data.local.entity.RegistroSerieEntity
+import androidx.room.Index
+
 @Database(
     entities = [
         UsuarioEntity::class,
@@ -38,9 +42,10 @@ import com.rehabtrack.app.data.local.entity.SesionEntity
         ProgramaEntity::class,
         EjercicioEntity::class,
         ProgramaEjercicioEntity::class,
-        SesionEntity::class
+        SesionEntity::class,
+        RegistroSerieEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class RehabDatabase : RoomDatabase() {
@@ -62,6 +67,8 @@ abstract class RehabDatabase : RoomDatabase() {
     abstract fun programaEjercicioDao(): ProgramaEjercicioDao
 
     abstract fun sesionDao(): SesionDao
+
+    abstract fun registroSerieDao(): RegistroSerieDao
 
     suspend fun <T> ejecutarTransaccion(
         operacion: suspend () -> T
@@ -171,6 +178,34 @@ abstract class RehabDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+
+            override fun migrate(db: SupportSQLiteDatabase) {
+
+                db.execSQL("""
+            CREATE TABLE IF NOT EXISTS registro_series (
+                idRegistroSerie INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                idSesion INTEGER NOT NULL,
+                idEjercicio INTEGER NOT NULL,
+                numeroSerie INTEGER NOT NULL,
+                repeticionesRealizadas INTEGER NOT NULL,
+                FOREIGN KEY(idSesion)
+                    REFERENCES sesiones(idSesion)
+                    ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(idEjercicio)
+                    REFERENCES ejercicios(idEjercicio)
+                    ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """)
+
+                db.execSQL("""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+            index_registro_series_idSesion_idEjercicio_numeroSerie
+            ON registro_series(idSesion, idEjercicio, numeroSerie)
+        """)
+            }
+        }
+
         fun getDatabase(context: Context): RehabDatabase {
 
             return INSTANCE ?: synchronized(this) {
@@ -182,7 +217,8 @@ abstract class RehabDatabase : RoomDatabase() {
                 )
                     .addMigrations(
                         MIGRATION_1_2,
-                        MIGRATION_2_3
+                        MIGRATION_2_3,
+                        MIGRATION_3_4
                     )
                     .build()
 

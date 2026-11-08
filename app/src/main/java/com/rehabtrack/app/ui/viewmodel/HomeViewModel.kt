@@ -13,9 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.rehabtrack.app.data.local.entity.SesionEntity
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState
@@ -114,25 +111,10 @@ class HomeViewModel(application: Application) :
                                 programa.idPrograma
                             )
 
-                        val calendario = Calendar.getInstance()
-
-                        val fechaActual = SimpleDateFormat(
-                            "yyyy-MM-dd",
-                            Locale.US
-                        ).format(calendario.time)
-
-                        val horaActual = SimpleDateFormat(
-                            "HH:mm",
-                            Locale.US
-                        ).format(calendario.time)
-
-                        sesionesPendientes.firstOrNull { sesion ->
-
-                            sesion.fecha > fechaActual ||
-                                    (sesion.fecha == fechaActual &&
-                                            sesion.hora >= horaActual)
-
-                        }
+                        sesionesPendientes.minWithOrNull(
+                            compareBy<SesionEntity> { it.fecha }
+                                .thenBy { it.hora }
+                        )
 
                     } else {
                         null

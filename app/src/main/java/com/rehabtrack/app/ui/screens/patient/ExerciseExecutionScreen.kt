@@ -53,11 +53,23 @@ import kotlin.math.roundToInt
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.PaddingValues
 import com.rehabtrack.app.navigation.Routes
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.Surface
 
 private val RehabBlueLight = Color(0xFFE3F2FD)
 
 @Composable
-fun ExerciseExecutionScreen(navController: NavController) {
+fun ExerciseExecutionScreen(
+    navController: NavController,
+    idSesion: Int,
+    indiceEjercicio: Int,
+    nombreEjercicio: String,
+    totalSeries: Int,
+    repeticiones: Int
+) {
     val colors = MaterialTheme.colorScheme
 
     var currentSeries by remember { mutableIntStateOf(1) }
@@ -65,9 +77,56 @@ fun ExerciseExecutionScreen(navController: NavController) {
     var painLevel by remember { mutableIntStateOf(4) }
     var exerciseFinished by remember { mutableStateOf(false) }
 
+    var repeticionesActuales by remember {
+        mutableIntStateOf(0)
+    }
+
+    val repeticionesPorSerie = remember {
+        mutableStateMapOf<Int, Int>()
+    }
+
     Scaffold(
         containerColor = colors.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        bottomBar = {
+            if (completedSeries.size == totalSeries) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = colors.background,
+                    shadowElevation = 6.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(
+                                horizontal = 24.dp,
+                                vertical = 12.dp
+                            )
+                    ) {
+                        Button(
+                            onClick = {
+                                navController.navigate(
+                                    "${Routes.ExerciseConfirmation.route}/$idSesion/$indiceEjercicio"
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.primary
+                            )
+                        ) {
+                            Text(
+                                text = "Completar ejercicio",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+                }
+            }
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -108,17 +167,28 @@ fun ExerciseExecutionScreen(navController: NavController) {
 
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        horizontal = 24.dp,
+                        vertical = 8.dp
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "Sentadilla asistida",
+                    text = nombreEjercicio,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = colors.onBackground
+                )
+
+                Text(
+                    text = "$repeticiones repeticiones por serie",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -128,7 +198,7 @@ fun ExerciseExecutionScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    for (series in 1..3) {
+                    for (series in 1.. totalSeries) {
                         val isCompleted = series in completedSeries
                         val isCurrent = series == currentSeries &&
                                 !exerciseFinished && !isCompleted
@@ -166,22 +236,36 @@ fun ExerciseExecutionScreen(navController: NavController) {
 
                             when {
                                 isCompleted -> {
-                                    Text(
-                                        text = "Completada",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = colors.primary,
-                                        textAlign = TextAlign.Center
-                                    )
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "Completada",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = colors.primary
+                                        )
+
+                                        Text(
+                                            text = "${repeticionesPorSerie[series] ?: 0}/$repeticiones",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = colors.primary
+                                        )
+                                    }
                                 }
 
                                 isCurrent -> {
                                     Button(
                                         onClick = {
-                                            completedSeries.add(series)
-                                            if (series < 3) {
-                                                currentSeries = series + 1
+                                            repeticionesPorSerie[currentSeries] = repeticionesActuales
+                                            completedSeries.add(currentSeries)
+
+                                            if (currentSeries < totalSeries) {
+                                                currentSeries++
+                                                repeticionesActuales = 0
                                             }
                                         },
+                                        enabled = repeticionesActuales > 0,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(34.dp),
@@ -220,6 +304,69 @@ fun ExerciseExecutionScreen(navController: NavController) {
                             }
                         }
                     }
+                }
+
+                // Contador de repeticiones de la serie actual
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Repeticiones de la serie $currentSeries",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onBackground
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(28.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                repeticionesActuales =
+                                    (repeticionesActuales - 1).coerceAtLeast(0)
+                            },
+                            enabled = repeticionesActuales > 0,
+                            shape = CircleShape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.primary
+                            )
+                        ) {
+                            Text("−")
+                        }
+
+                        Text(
+                            text = "$repeticionesActuales / $repeticiones",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onBackground
+                        )
+
+                        Button(
+                            onClick = {
+                                repeticionesActuales =
+                                    (repeticionesActuales + 1).coerceAtMost(repeticiones)
+                            },
+                            enabled = repeticionesActuales < repeticiones,
+                            shape = CircleShape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.primary
+                            )
+                        ) {
+                            Text("+")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Repeticiones realizadas",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(22.dp))
@@ -392,28 +539,7 @@ fun ExerciseExecutionScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                if (exerciseFinished) {
-                    Text(
-                        text = "Ejercicio completado",
-                        color = colors.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else if (completedSeries.size == 3) {
-                    Button(
-                        onClick = {
-                            navController.navigate(Routes.ExerciseConfirmation.route)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth(0.68f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = colors.primary
-                        )
-                    ) {
-                        Text("Completar ejercicio")
-                    }
-                } else {
+                if (!exerciseFinished && completedSeries.size < totalSeries) {
                     Text(
                         text = "Registra la serie ${currentSeries} para continuar",
                         style = MaterialTheme.typography.bodySmall,

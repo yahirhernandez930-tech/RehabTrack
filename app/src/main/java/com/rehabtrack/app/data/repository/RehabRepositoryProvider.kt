@@ -34,6 +34,9 @@ class RehabRepositoryProvider(context: Context) {
     val sesionRepository =
         SesionRepository(database.sesionDao())
 
+    val registroSerieRepository =
+        RegistroSerieRepository(database.registroSerieDao())
+
     suspend fun <T> ejecutarTransaccion(
         operacion: suspend () -> T
     ): T {

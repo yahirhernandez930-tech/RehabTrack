@@ -5,7 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.rehabtrack.app.ui.screens.auth.LoginScreen
@@ -34,21 +34,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rehabtrack.app.ui.viewmodel.NextSessionViewModel
+import com.rehabtrack.app.ui.viewmodel.SessionExercisesViewModel
+import com.rehabtrack.app.ui.viewmodel.SessionExercisesUiState
+import com.rehabtrack.app.ui.viewmodel.SessionExerciseData
 
 @Composable
 fun AppNavigation() {
 
     val navController = rememberNavController()
 
-    var ejercicioActual by remember {
-        mutableIntStateOf(0)
+    var ejerciciosSesion by remember {
+        mutableStateOf<List<SessionExerciseData>>(emptyList())
     }
-
-    val ejercicios = listOf(
-        "Sentadilla asistida",
-        "Extensión de rodilla",
-        "Elevación de pierna"
-    )
 
     NavHost(
         navController = navController,
@@ -154,8 +151,9 @@ fun AppNavigation() {
                     navController = navController,
                     uiState = uiState,
                     onStartSession = {
-                        ejercicioActual = 0
-                        navController.navigate("${Routes.SessionConfirmation.route}/$idSesion") {
+                        navController.navigate(
+                            "${Routes.ExerciseInfo.route}/$idSesion"
+                        ) {
                             popUpTo(Routes.NextSession.route) {
                                 inclusive = false
                             }
@@ -174,78 +172,150 @@ fun AppNavigation() {
                 ?.toIntOrNull()
 
             if (idSesion != null) {
+
+                val viewModel: SessionExercisesViewModel = viewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
+                LaunchedEffect(idSesion) {
+                    viewModel.cargarEjercicios(idSesion)
+                }
+
+                val cargando = uiState is SessionExercisesUiState.Loading
+
+                val cantidadEjercicios =
+                    (uiState as? SessionExercisesUiState.Success)
+                        ?.ejercicios
+                        ?.size ?: 0
+
+                val mensajeError =
+                    (uiState as? SessionExercisesUiState.Error)
+                        ?.mensaje
+
                 SessionConfirmationScreen(
                     navController = navController,
-                    idSesion = idSesion
-                )
-            }
-        }
+                    idSesion = idSesion,
+                    cantidadEjercicios = cantidadEjercicios,
+                    cargando = cargando,
+                    mensajeError = mensajeError,
+                    onComenzar = {
+                        val resultado =
+                            uiState as? SessionExercisesUiState.Success
 
-        composable(
-            route = "${Routes.ExerciseInfo.route}/{idSesion}"
-        ) { backStackEntry ->
+                        if (resultado != null) {
+                            ejerciciosSesion = resultado.ejercicios
 
-            val idSesion = backStackEntry.arguments
-                ?.getString("idSesion")
-                ?.toIntOrNull()
-
-            if (idSesion != null) {
-                ExerciseInfoScreen(
-                    navController = navController,
-                    nombreEjercicio = ejercicios[ejercicioActual],
-                    idSesion = idSesion
-                )
-            }
-        }
-
-        composable(
-            route = "${Routes.Exercise.route}/{idSesion}"
-        ) { backStackEntry ->
-
-            val idSesion = backStackEntry.arguments
-                ?.getString("idSesion")
-                ?.toIntOrNull()
-
-            if (idSesion != null) {
-                ExerciseExecutionScreen(navController)
-            }
-        }
-
-        composable(Routes.ExerciseConfirmation.route) {
-            ExerciseConfirmationScreen(
-                navController = navController,
-                onContinue = {
-                    if (ejercicioActual < ejercicios.lastIndex) {
-                        ejercicioActual++
-
-                        navController.navigate(
-                            Routes.ExerciseInfo.route
-                        ) {
-                            popUpTo(Routes.ExerciseInfo.route) {
-                                inclusive = true
-                            }
-                        }
-                    } else {
-                        navController.navigate(
-                            Routes.SessionCompletion.route
-                        ) {
-                            popUpTo(Routes.NextSession.route) {
-                                inclusive = false
-                            }
+                            navController.navigate(
+                                "${Routes.ExerciseInfo.route}/$idSesion/0"
+                            )
                         }
                     }
-                },
-                onExit = {
-                    navController.popBackStack(
-                        Routes.NextSession.route,
-                        inclusive = false
-                    )
-                }
-            )
+                )
+            }
         }
 
-        composable(Routes.SessionCompletion.route) {
-            SessionCompletionScreen(navController)
+        composable(
+            route = "${Routes.ExerciseInfo.route}/{idSesion}/{indiceEjercicio}"
+        ) { backStackEntry ->
+
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
+
+            val indiceEjercicio = backStackEntry.arguments
+                ?.getString("indiceEjercicio")
+                ?.toIntOrNull()
+
+            if (idSesion != null && indiceEjercicio != null) {
+                val ejercicio = ejerciciosSesion.getOrNull(indiceEjercicio)
+
+                if (ejercicio != null) {
+                    ExerciseInfoScreen(
+                        navController = navController,
+                        nombreEjercicio = ejercicio.nombre,
+                        idSesion = idSesion,
+                        indiceEjercicio = indiceEjercicio
+                    )
+                }
+            }
+        }
+
+        composable(
+            route = "${Routes.Exercise.route}/{idSesion}/{indiceEjercicio}"
+        ) { backStackEntry ->
+
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
+
+            val indiceEjercicio = backStackEntry.arguments
+                ?.getString("indiceEjercicio")
+                ?.toIntOrNull()
+
+            if (idSesion != null && indiceEjercicio != null) {
+                val ejercicio = ejerciciosSesion.getOrNull(indiceEjercicio)
+
+                if (ejercicio != null) {
+                    ExerciseExecutionScreen(
+                        navController = navController,
+                        idSesion = idSesion,
+                        indiceEjercicio = indiceEjercicio,
+                        nombreEjercicio = ejercicio.nombre,
+                        totalSeries = ejercicio.series,
+                        repeticiones = ejercicio.repeticiones
+                    )
+                }
+            }
+        }
+
+        composable(
+            route = "${Routes.ExerciseConfirmation.route}/{idSesion}/{indiceEjercicio}"
+        ) { backStackEntry ->
+
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
+
+            val indiceEjercicio = backStackEntry.arguments
+                ?.getString("indiceEjercicio")
+                ?.toIntOrNull()
+
+            if (idSesion != null && indiceEjercicio != null) {
+                ExerciseConfirmationScreen(
+                    navController = navController,
+                    onContinue = {
+                        if (indiceEjercicio < ejerciciosSesion.lastIndex) {
+                            val siguienteIndice = indiceEjercicio + 1
+
+                            navController.navigate(
+                                "${Routes.ExerciseInfo.route}/$idSesion/$siguienteIndice"
+                            )
+                        } else {
+                            navController.navigate(
+                                "${Routes.SessionCompletion.route}/$idSesion"
+                            )
+                        }
+                    },
+                    onExit = {
+                        navController.popBackStack(
+                            Routes.Home.route,
+                            inclusive = false
+                        )
+                    }
+                )
+            }
+        }
+
+        composable(
+            route = "${Routes.SessionCompletion.route}/{idSesion}"
+        ) { backStackEntry ->
+
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
+
+            if (idSesion != null) {
+                SessionCompletionScreen(navController)
+            }
         }
 
         composable(

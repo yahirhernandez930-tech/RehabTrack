@@ -32,12 +32,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.rehabtrack.app.navigation.Routes
 
 @Composable
 fun SessionConfirmationScreen(
     navController: NavController,
-    idSesion: Int
+    idSesion: Int,
+    cantidadEjercicios: Int,
+    cargando: Boolean,
+    mensajeError: String?,
+    onComenzar: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
 
@@ -104,7 +107,7 @@ fun SessionConfirmationScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "3 ejercicios",
+                    text = "$cantidadEjercicios ejercicios",
                     style = MaterialTheme.typography.titleMedium,
                     color = colors.onBackground
                 )
@@ -122,9 +125,10 @@ fun SessionConfirmationScreen(
                 Spacer(modifier = Modifier.height(58.dp))
 
                 Button(
-                    onClick = {
-                        navController.navigate("${Routes.ExerciseInfo.route}/$idSesion")
-                    },
+                    onClick = onComenzar,
+                    enabled = !cargando &&
+                            cantidadEjercicios > 0 &&
+                            mensajeError == null,
                     modifier = Modifier
                         .fillMaxWidth(0.68f)
                         .height(46.dp),
@@ -133,7 +137,22 @@ fun SessionConfirmationScreen(
                         containerColor = colors.primary
                     )
                 ) {
-                    Text("Comenzar sesión")
+                    Text(
+                        if (cargando) {
+                            "Cargando ejercicios..."
+                        } else {
+                            "Comenzar sesión"
+                        }
+                    )
+                }
+
+                if (mensajeError != null) {
+                    Text(
+                        text = mensajeError,
+                        color = colors.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(44.dp))

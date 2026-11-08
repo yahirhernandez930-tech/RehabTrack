@@ -43,7 +43,8 @@ import com.rehabtrack.app.navigation.Routes
 fun ExerciseInfoScreen(
     navController: NavController,
     nombreEjercicio: String,
-    idSesion: Int
+    idSesion: Int,
+    indiceEjercicio: Int
 ) {
     val colors = MaterialTheme.colorScheme
 
@@ -220,7 +221,9 @@ fun ExerciseInfoScreen(
 
                 Button(
                     onClick = {
-                        navController.navigate("${Routes.Exercise.route}/$idSesion")
+                        navController.navigate(
+                            "${Routes.Exercise.route}/$idSesion/$indiceEjercicio"
+                        )
                     },
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
