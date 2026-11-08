@@ -233,6 +233,10 @@ fun AppNavigation() {
                     ExerciseInfoScreen(
                         navController = navController,
                         nombreEjercicio = ejercicio.nombre,
+                        descripcion = ejercicio.descripcion,
+                        instrucciones = ejercicio.instrucciones,
+                        series = ejercicio.series,
+                        repeticiones = ejercicio.repeticiones,
                         idSesion = idSesion,
                         indiceEjercicio = indiceEjercicio
                     )

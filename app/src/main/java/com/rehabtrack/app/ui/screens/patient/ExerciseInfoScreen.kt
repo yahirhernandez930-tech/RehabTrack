@@ -43,6 +43,10 @@ import com.rehabtrack.app.navigation.Routes
 fun ExerciseInfoScreen(
     navController: NavController,
     nombreEjercicio: String,
+    descripcion: String,
+    instrucciones: String,
+    series: Int,
+    repeticiones: Int,
     idSesion: Int,
     indiceEjercicio: Int
 ) {
@@ -148,7 +152,7 @@ fun ExerciseInfoScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Realiza el movimiento...",
+                    text = descripcion,
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onBackground
                 )
@@ -165,7 +169,7 @@ fun ExerciseInfoScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Mantén la espalda...",
+                    text = instrucciones,
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onBackground
                 )
@@ -193,7 +197,7 @@ fun ExerciseInfoScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "3",
+                            text = series.toString(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = colors.onSurface
                         )
@@ -210,7 +214,7 @@ fun ExerciseInfoScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "10",
+                            text = repeticiones.toString(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = colors.onSurface
                         )
