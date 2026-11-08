@@ -37,6 +37,7 @@ import com.rehabtrack.app.ui.viewmodel.NextSessionViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionExercisesViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionExercisesUiState
 import com.rehabtrack.app.ui.viewmodel.SessionExerciseData
+import com.rehabtrack.app.ui.viewmodel.SessionProgressViewModel
 
 @Composable
 fun AppNavigation() {
@@ -255,13 +256,36 @@ fun AppNavigation() {
                 val ejercicio = ejerciciosSesion.getOrNull(indiceEjercicio)
 
                 if (ejercicio != null) {
+                    val progressViewModel: SessionProgressViewModel = viewModel()
+                    val progressState by progressViewModel.uiState.collectAsState()
+
+                    LaunchedEffect(idSesion, ejercicio.idEjercicio) {
+                        progressViewModel.cargarProgreso(
+                            idSesion = idSesion,
+                            idEjercicio = ejercicio.idEjercicio
+                        )
+                    }
+
                     ExerciseExecutionScreen(
                         navController = navController,
                         idSesion = idSesion,
                         indiceEjercicio = indiceEjercicio,
+                        idEjercicio = ejercicio.idEjercicio,
                         nombreEjercicio = ejercicio.nombre,
                         totalSeries = ejercicio.series,
-                        repeticiones = ejercicio.repeticiones
+                        repeticiones = ejercicio.repeticiones,
+                        registros = progressState.registros,
+                        cargandoProgreso = progressState.cargando,
+                        guardandoSerie = progressState.guardando,
+                        mensajeError = progressState.mensajeError,
+                        onRegistrarSerie = { numeroSerie, repeticionesRealizadas ->
+                            progressViewModel.registrarSerie(
+                                idSesion = idSesion,
+                                idEjercicio = ejercicio.idEjercicio,
+                                numeroSerie = numeroSerie,
+                                repeticionesRealizadas = repeticionesRealizadas
+                            )
+                        }
                     )
                 }
             }

@@ -31,8 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,11 +51,13 @@ import kotlin.math.roundToInt
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.PaddingValues
 import com.rehabtrack.app.navigation.Routes
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Surface
+import com.rehabtrack.app.data.local.entity.RegistroSerieEntity
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.CircularProgressIndicator
 
 private val RehabBlueLight = Color(0xFFE3F2FD)
 
@@ -66,30 +66,48 @@ fun ExerciseExecutionScreen(
     navController: NavController,
     idSesion: Int,
     indiceEjercicio: Int,
+    idEjercicio: Int,
     nombreEjercicio: String,
     totalSeries: Int,
-    repeticiones: Int
+    repeticiones: Int,
+    registros: List<RegistroSerieEntity>,
+    cargandoProgreso: Boolean,
+    guardandoSerie: Boolean,
+    mensajeError: String?,
+    onRegistrarSerie: (Int, Int) -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
 
-    var currentSeries by remember { mutableIntStateOf(1) }
-    val completedSeries = remember { mutableStateListOf<Int>() }
     var painLevel by remember { mutableIntStateOf(4) }
-    var exerciseFinished by remember { mutableStateOf(false) }
-
     var repeticionesActuales by remember {
         mutableIntStateOf(0)
     }
 
-    val repeticionesPorSerie = remember {
-        mutableStateMapOf<Int, Int>()
+    // Las series completadas ahora proceden de Room.
+    val completedSeries = registros.map { it.numeroSerie }.toSet()
+
+    // Recuperamos las repeticiones registradas para cada serie.
+    val repeticionesPorSerie = registros.associate {
+        it.numeroSerie to it.repeticionesRealizadas
+    }
+
+    // Identificamos la primera serie que todavía no se ha registrado.
+    val currentSeries = (1..totalSeries)
+        .firstOrNull { it !in completedSeries }
+        ?: totalSeries
+
+    val exerciseFinished = completedSeries.size >= totalSeries
+
+    // Reiniciamos el contador al pasar a la siguiente serie.
+    LaunchedEffect(currentSeries) {
+        repeticionesActuales = 0
     }
 
     Scaffold(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            if (completedSeries.size == totalSeries) {
+            if (exerciseFinished && !cargandoProgreso) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = colors.background,
@@ -170,6 +188,7 @@ fun ExerciseExecutionScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                    .navigationBarsPadding()
                     .padding(
                         horizontal = 24.dp,
                         vertical = 8.dp
@@ -192,6 +211,18 @@ fun ExerciseExecutionScreen(
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
+
+                if (cargandoProgreso) {
+                    CircularProgressIndicator()
+                }
+
+                mensajeError?.let { error ->
+                    Text(
+                        text = error,
+                        color = colors.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
                 // Tarjetas de las tres series
                 Row(
@@ -257,31 +288,35 @@ fun ExerciseExecutionScreen(
                                 isCurrent -> {
                                     Button(
                                         onClick = {
-                                            repeticionesPorSerie[currentSeries] = repeticionesActuales
-                                            completedSeries.add(currentSeries)
-
-                                            if (currentSeries < totalSeries) {
-                                                currentSeries++
-                                                repeticionesActuales = 0
-                                            }
+                                            onRegistrarSerie(
+                                                currentSeries,
+                                                repeticionesActuales
+                                            )
                                         },
-                                        enabled = repeticionesActuales > 0,
+                                        enabled = repeticionesActuales > 0 &&
+                                                !guardandoSerie &&
+                                                !cargandoProgreso,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(34.dp),
-                                        contentPadding =
-                                            PaddingValues(
-                                                horizontal = 4.dp
-                                            ),
+                                        contentPadding = PaddingValues(horizontal = 4.dp),
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = colors.primary
                                         )
                                     ) {
-                                        Text(
-                                            text = "Registrar",
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
+                                        if (guardandoSerie) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(18.dp),
+                                                strokeWidth = 2.dp,
+                                                color = colors.onPrimary
+                                            )
+                                        } else {
+                                            Text(
+                                                text = "Registrar",
+                                                style = MaterialTheme.typography.labelSmall
+                                            )
+                                        }
                                     }
                                 }
 
@@ -329,7 +364,10 @@ fun ExerciseExecutionScreen(
                                 repeticionesActuales =
                                     (repeticionesActuales - 1).coerceAtLeast(0)
                             },
-                            enabled = repeticionesActuales > 0,
+                            enabled = repeticionesActuales > 0 &&
+                                    !guardandoSerie &&
+                                    !cargandoProgreso &&
+                                    !exerciseFinished,
                             shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = colors.primary
@@ -350,7 +388,10 @@ fun ExerciseExecutionScreen(
                                 repeticionesActuales =
                                     (repeticionesActuales + 1).coerceAtMost(repeticiones)
                             },
-                            enabled = repeticionesActuales < repeticiones,
+                            enabled = repeticionesActuales < repeticiones &&
+                                    !guardandoSerie &&
+                                    !cargandoProgreso &&
+                                    !exerciseFinished,
                             shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = colors.primary
@@ -539,7 +580,10 @@ fun ExerciseExecutionScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                if (!exerciseFinished && completedSeries.size < totalSeries) {
+                if (!cargandoProgreso &&
+                    !exerciseFinished &&
+                    completedSeries.size < totalSeries
+                ) {
                     Text(
                         text = "Registra la serie ${currentSeries} para continuar",
                         style = MaterialTheme.typography.bodySmall,
