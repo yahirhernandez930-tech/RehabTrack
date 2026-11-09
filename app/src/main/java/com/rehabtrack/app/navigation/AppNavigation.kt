@@ -38,6 +38,7 @@ import com.rehabtrack.app.ui.viewmodel.SessionExercisesViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionExercisesUiState
 import com.rehabtrack.app.ui.viewmodel.SessionExerciseData
 import com.rehabtrack.app.ui.viewmodel.SessionProgressViewModel
+import com.rehabtrack.app.ui.viewmodel.SessionCompletionViewModel
 
 @Composable
 fun AppNavigation() {
@@ -342,7 +343,26 @@ fun AppNavigation() {
                 ?.toIntOrNull()
 
             if (idSesion != null) {
-                SessionCompletionScreen(navController)
+
+                val viewModel: SessionCompletionViewModel = viewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
+                LaunchedEffect(idSesion) {
+                    viewModel.cargarSesion(idSesion)
+                }
+
+                SessionCompletionScreen(
+                    navController = navController,
+                    idSesion = idSesion,
+                    uiState = uiState,
+                    onFinalizarSesion = { nivelDolor, observaciones ->
+                        viewModel.finalizarSesion(
+                            idSesion = idSesion,
+                            nivelDolor = nivelDolor,
+                            observaciones = observaciones
+                        )
+                    }
+                )
             }
         }
 

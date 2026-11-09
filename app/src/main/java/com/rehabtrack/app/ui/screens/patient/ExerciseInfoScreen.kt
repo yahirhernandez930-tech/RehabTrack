@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,8 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
@@ -36,8 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.compose.ui.graphics.Color
 import com.rehabtrack.app.navigation.Routes
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 @Composable
 fun ExerciseInfoScreen(
@@ -56,12 +60,14 @@ fun ExerciseInfoScreen(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .background(colors.background)
         ) {
+
             // Encabezado
             Row(
                 modifier = Modifier
@@ -71,6 +77,7 @@ fun ExerciseInfoScreen(
                     .height(54.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 IconButton(
                     onClick = { navController.popBackStack() }
                 ) {
@@ -93,13 +100,18 @@ fun ExerciseInfoScreen(
                 Spacer(modifier = Modifier.width(48.dp))
             }
 
+            // Contenido desplazable
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 28.dp)
             ) {
-                Spacer(modifier = Modifier.height(32.dp))
 
+                Spacer(modifier = Modifier.height(28.dp))
+
+                // Nombre del ejercicio
                 Text(
                     text = nombreEjercicio,
                     modifier = Modifier.fillMaxWidth(),
@@ -111,39 +123,58 @@ fun ExerciseInfoScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Espacio para la imagen del ejercicio
+                // Espacio para el video demostrativo
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp)
+                        .aspectRatio(16f / 9f)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(colors.surfaceVariant),
+                        .background(Color(0xFFEAF3FC)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Surface(
-                        modifier = Modifier.size(52.dp),
-                        shape = CircleShape,
-                        color = colors.primary
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        IconButton(
-                            onClick = {
-                                // La reproducción del video se implementará después.
-                            }
+
+                        Surface(
+                            modifier = Modifier.size(56.dp),
+                            shape = CircleShape,
+                            color = colors.primary
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "Reproducir video",
+                                contentDescription = null,
                                 tint = colors.onPrimary,
-                                modifier = Modifier.size(34.dp)
+                                modifier = Modifier.padding(12.dp)
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "Video demostrativo",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = colors.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "Disponible próximamente",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
+                // Descripción del ejercicio
                 Text(
-                    text = "Instrucciones",
+                    text = "Descripción del ejercicio",
                     style = MaterialTheme.typography.titleMedium,
                     color = colors.onBackground,
                     fontWeight = FontWeight.Bold
@@ -152,15 +183,18 @@ fun ExerciseInfoScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = descripcion,
+                    text = descripcion.ifBlank {
+                        "La descripción de este ejercicio estará disponible próximamente."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
+                // Cómo realizarlo
                 Text(
-                    text = "Indicaciones",
+                    text = "Cómo realizarlo",
                     style = MaterialTheme.typography.titleMedium,
                     color = colors.onBackground,
                     fontWeight = FontWeight.Bold
@@ -169,37 +203,42 @@ fun ExerciseInfoScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = instrucciones,
+                    text = instrucciones.ifBlank {
+                        "Las indicaciones para realizar este ejercicio estarán disponibles próximamente."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onBackground
                 )
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Resumen de series y repeticiones
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFFE3F2FD))
-                        .padding(vertical = 12.dp),
+                        .background(Color(0xFFEAF3FC))
+                        .padding(vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             text = "Series",
                             style = MaterialTheme.typography.titleMedium,
-                            color = colors.primary,
+                            color = colors.onSecondaryContainer,
                             fontWeight = FontWeight.Bold
                         )
+
                         Spacer(modifier = Modifier.height(4.dp))
+
                         Text(
                             text = series.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onSurface
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colors.onSecondaryContainer
                         )
                     }
 
@@ -209,20 +248,23 @@ fun ExerciseInfoScreen(
                         Text(
                             text = "Repeticiones",
                             style = MaterialTheme.typography.titleMedium,
-                            color = colors.primary,
+                            color = colors.onSecondaryContainer,
                             fontWeight = FontWeight.Bold
                         )
+
                         Spacer(modifier = Modifier.height(4.dp))
+
                         Text(
                             text = repeticiones.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onSurface
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colors.onSecondaryContainer
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(34.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
+                // Botón para iniciar el ejercicio
                 Button(
                     onClick = {
                         navController.navigate(
@@ -231,7 +273,7 @@ fun ExerciseInfoScreen(
                     },
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
-                        .fillMaxWidth(0.68f)
+                        .fillMaxWidth(0.85f)
                         .height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -240,6 +282,8 @@ fun ExerciseInfoScreen(
                 ) {
                     Text("Iniciar ejercicio")
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

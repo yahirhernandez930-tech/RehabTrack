@@ -33,14 +33,13 @@ import com.rehabtrack.app.ui.viewmodel.HomeUiState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.ui.text.style.TextAlign
 import com.rehabtrack.app.navigation.Routes
-import androidx.compose.foundation.clickable
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.rehabtrack.app.ui.viewmodel.EjercicioDebugViewModel
 
 @Composable
 fun HomeScreen(
@@ -50,6 +49,12 @@ fun HomeScreen(
     val colors = MaterialTheme.colorScheme
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    val debugViewModel: EjercicioDebugViewModel = viewModel()
+
+    LaunchedEffect(Unit) {
+        debugViewModel.consultarEjercicios()
+    }
 
     val viewModel: HomeViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsState()

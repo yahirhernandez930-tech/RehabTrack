@@ -1,7 +1,6 @@
 package com.rehabtrack.app.ui.screens.patient
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,14 +40,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.input.pointer.pointerInput
-import kotlin.math.roundToInt
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.PaddingValues
 import com.rehabtrack.app.navigation.Routes
 import androidx.compose.foundation.rememberScrollState
@@ -78,25 +69,29 @@ fun ExerciseExecutionScreen(
 ) {
     val colors = MaterialTheme.colorScheme
 
-    var painLevel by remember { mutableIntStateOf(4) }
     var repeticionesActuales by remember {
         mutableIntStateOf(0)
     }
 
-    // Las series completadas ahora proceden de Room.
-    val completedSeries = registros.map { it.numeroSerie }.toSet()
+    val registrosValidos = registros.filter { registro ->
+        registro.numeroSerie in 1..totalSeries &&
+                registro.repeticionesRealizadas > 0
+    }
 
-    // Recuperamos las repeticiones registradas para cada serie.
-    val repeticionesPorSerie = registros.associate {
+    val completedSeries = registrosValidos
+        .map { it.numeroSerie }
+        .toSet()
+
+    val repeticionesPorSerie = registrosValidos.associate {
         it.numeroSerie to it.repeticionesRealizadas
     }
 
-    // Identificamos la primera serie que todavía no se ha registrado.
     val currentSeries = (1..totalSeries)
         .firstOrNull { it !in completedSeries }
         ?: totalSeries
 
-    val exerciseFinished = completedSeries.size >= totalSeries
+    val exerciseFinished = totalSeries > 0 &&
+            (1..totalSeries).all { it in completedSeries }
 
     // Reiniciamos el contador al pasar a la siguiente serie.
     LaunchedEffect(currentSeries) {
@@ -455,127 +450,6 @@ fun ExerciseExecutionScreen(
                     ) {
                         Text("Tomar fotografía")
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Nivel de dolor
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Nivel de dolor",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.onBackground
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "0 - Sin dolor",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colors.onBackground
-                        )
-
-                        Text(
-                            text = "10 - Dolor máximo",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colors.onBackground
-                        )
-                    }
-
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(32.dp)
-                            .pointerInput(Unit) {
-                                detectTapGestures { offset ->
-                                    painLevel = (
-                                            (offset.x / size.width) * 10
-                                            ).roundToInt().coerceIn(0, 10)
-                                }
-                            }
-                            .pointerInput(Unit) {
-                                detectDragGestures(
-                                    onDragStart = { offset ->
-                                        painLevel = (
-                                                (offset.x / size.width) * 10
-                                                ).roundToInt().coerceIn(0, 10)
-                                    },
-                                    onDrag = { change, _ ->
-                                        change.consume()
-
-                                        painLevel = (
-                                                (change.position.x / size.width) * 10
-                                                ).roundToInt().coerceIn(0, 10)
-                                    }
-                                )
-                            }
-                    ) {
-                        val centerY = size.height / 2
-                        val trackHeight = 12.dp.toPx()
-                        val thumbRadius = 7.dp.toPx()
-                        val thumbX = size.width * painLevel / 10f
-
-                        drawRoundRect(
-                            color = Color(0xFFCBD5E1),
-                            topLeft = Offset(0f, centerY - trackHeight / 2),
-                            size = Size(size.width, trackHeight),
-                            cornerRadius = CornerRadius(trackHeight / 2)
-                        )
-
-                        drawRoundRect(
-                            color = colors.primary,
-                            topLeft = Offset(0f, centerY - trackHeight / 2),
-                            size = Size(thumbX, trackHeight),
-                            cornerRadius = CornerRadius(trackHeight / 2)
-                        )
-
-                        drawCircle(
-                            color = colors.primary,
-                            radius = thumbRadius,
-                            center = Offset(thumbX, centerY)
-                        )
-                    }
-
-                    // Indicadores numéricos seleccionables
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        for (level in 0..10) {
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (painLevel == level) {
-                                            colors.primary
-                                        } else {
-                                            colors.surfaceVariant
-                                        }
-                                    )
-                                    .clickable {
-                                        painLevel = level
-                                    }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = "Dolor registrado: $painLevel/10",
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.onBackground,
-                        textAlign = TextAlign.Center
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
