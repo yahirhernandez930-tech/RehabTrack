@@ -88,7 +88,8 @@ fun HomeScreen(
         bottomBar = {
             PatientBottomBar(
                 navController = navController,
-                currentRoute = currentRoute
+                currentRoute = currentRoute,
+                idUsuario = idUsuario
             )
         }
     ) { innerPadding ->

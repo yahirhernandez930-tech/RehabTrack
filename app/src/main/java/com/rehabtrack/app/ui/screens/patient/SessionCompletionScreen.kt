@@ -126,10 +126,19 @@ fun SessionCompletionScreen(
 
                     Button(
                         onClick = {
-                            navController.popBackStack(
-                                Routes.Home.route,
+                            val regresoExitoso = navController.popBackStack(
+                                "home/{idUsuario}",
                                 inclusive = false
                             )
+
+                            if (!regresoExitoso) {
+                                navController.navigate(Routes.Login.route) {
+                                    popUpTo(Routes.Login.route) {
+                                        inclusive = false
+                                    }
+                                    launchSingleTop = true
+                                }
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth(0.75f)

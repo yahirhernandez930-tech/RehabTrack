@@ -39,6 +39,7 @@ import com.rehabtrack.app.ui.viewmodel.SessionExercisesUiState
 import com.rehabtrack.app.ui.viewmodel.SessionExerciseData
 import com.rehabtrack.app.ui.viewmodel.SessionProgressViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionCompletionViewModel
+import com.rehabtrack.app.ui.viewmodel.SessionDetailViewModel
 
 @Composable
 fun AppNavigation() {
@@ -78,50 +79,86 @@ fun AppNavigation() {
             }
         }
 
-        composable(Routes.Progress.route) {
-            ProgressScreen(navController)
+        composable("${Routes.Progress.route}/{idUsuario}") { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                ProgressScreen(
+                    navController = navController,
+                    idUsuario = idUsuario
+                )
+            }
         }
 
-        composable(Routes.History.route) {
-            HistoryScreen(navController)
+        composable("${Routes.History.route}/{idUsuario}") { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                HistoryScreen(
+                    navController = navController,
+                    idUsuario = idUsuario
+                )
+            }
         }
 
         composable(
-            route = "${Routes.History.route}/{patientName}"
+            route = "${Routes.History.route}/patient/{idPaciente}"
         ) { backStackEntry ->
 
-            val patientName = java.net.URLDecoder.decode(
-                backStackEntry.arguments?.getString("patientName") ?: "Paciente",
-                "UTF-8"
-            )
+            val idPaciente = backStackEntry.arguments
+                ?.getString("idPaciente")
+                ?.toIntOrNull()
 
-            HistoryScreen(
-                navController = navController,
-                patientName = patientName
-            )
-        }
-
-        composable(Routes.SessionDetail.route) {
-            SessionDetailScreen(navController)
+            if (idPaciente != null) {
+                HistoryScreen(
+                    navController = navController,
+                    idPaciente = idPaciente
+                )
+            }
         }
 
         composable(
-            route = "${Routes.SessionDetail.route}/{patientName}"
+            route = "${Routes.SessionDetail.route}/{idSesion}"
         ) { backStackEntry ->
 
-            val patientName = java.net.URLDecoder.decode(
-                backStackEntry.arguments?.getString("patientName") ?: "Paciente",
-                "UTF-8"
-            )
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
 
-            SessionDetailScreen(
-                navController = navController,
-                patientName = patientName
-            )
+            if (idSesion != null) {
+
+                val viewModel: SessionDetailViewModel = viewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
+                LaunchedEffect(idSesion) {
+                    viewModel.cargarDetalle(idSesion)
+                }
+
+                SessionDetailScreen(
+                    navController = navController,
+                    uiState = uiState
+                )
+            }
         }
 
-        composable(Routes.Profile.route) {
-            ProfileScreen(navController)
+        composable("${Routes.Profile.route}/{idUsuario}") { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                ProfileScreen(
+                    navController = navController,
+                    idUsuario = idUsuario
+                )
+            }
         }
 
         composable(Routes.ChangeEmail.route) {
@@ -326,7 +363,7 @@ fun AppNavigation() {
                     },
                     onExit = {
                         navController.popBackStack(
-                            Routes.Home.route,
+                            route = "${Routes.Home.route}/{idUsuario}",
                             inclusive = false
                         )
                     }

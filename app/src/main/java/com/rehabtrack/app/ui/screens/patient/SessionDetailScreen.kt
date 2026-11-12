@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -19,13 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
 import androidx.navigation.NavController
-import com.rehabtrack.app.R
+import com.rehabtrack.app.ui.viewmodel.SessionDetailUiState
+import com.rehabtrack.app.data.local.entity.RegistroSerieEntity
 
 private val SessionBlue = Color(0xFF1976D2)
 private val SessionText = Color(0xFF263238)
@@ -33,65 +27,51 @@ private val SessionSecondary = Color(0xFF64748B)
 private val SessionBorder = Color(0xFFCBD5E1)
 private val SessionLightBlue = Color(0xFFE3F2FD)
 
-private data class CompletedExercise(
-    val name: String,
-    val details: String
-)
-
-private val exampleExercises = listOf(
-    CompletedExercise(
-        "Sentadilla asistida",
-        "3 series · 10 repeticiones"
-    ),
-    CompletedExercise(
-        "Flexión de rodilla",
-        "3 series · 8 repeticiones"
-    ),
-    CompletedExercise(
-        "Extensión de rodilla",
-        "2 series · 10 repeticiones"
-    )
-)
-
 @Composable
 fun SessionDetailScreen(
     navController: NavController,
-    patientName: String = "María López"
+    uiState: SessionDetailUiState
 ) {
 
-    val showEvidence = remember { mutableStateOf(false) }
+    if (uiState.cargando) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = SessionBlue)
+        }
+        return
+    }
 
-    if (showEvidence.value) {
-        AlertDialog(
-            onDismissRequest = {
-                showEvidence.value = false
-            },
-            title = {
-                Text("Sentadilla asistida")
-            },
-            text = {
-                Image(
-                    painter = painterResource(
-                        id = R.drawable.evidencia_sentadilla
-                    ),
-                    contentDescription = "Fotografía ampliada de sentadilla asistida",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 450.dp),
-                    contentScale = ContentScale.Fit
+    if (uiState.mensajeError != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = uiState.mensajeError,
+                    color = SessionText,
+                    textAlign = TextAlign.Center
                 )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showEvidence.value = false
-                    }
+
+                Spacer(Modifier.height(16.dp))
+
+                Button(
+                    onClick = { navController.popBackStack() }
                 ) {
-                    Text("Cerrar")
+                    Text("Regresar")
                 }
             }
-        )
+        }
+        return
     }
+
+    val sesion = uiState.sesion ?: return
 
     Scaffold(
         containerColor = Color.White,
@@ -150,7 +130,7 @@ fun SessionDetailScreen(
 
                 // Información del paciente
                 Text(
-                    text = patientName,
+                    text = uiState.nombrePaciente,
                     color = SessionText,
                     fontSize = 21.sp,
                     fontWeight = FontWeight.Bold,
@@ -161,7 +141,7 @@ fun SessionDetailScreen(
                 Spacer(Modifier.height(5.dp))
 
                 Text(
-                    text = "Sesión del 30 de septiembre de 2026",
+                    text = "Sesión del ${sesion.fecha}",
                     color = SessionSecondary,
                     fontSize = 12.sp,
                     textAlign = TextAlign.Center,
@@ -176,14 +156,14 @@ fun SessionDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     SessionStatisticCard(
-                        label = "Duración",
-                        value = "20 min",
+                        label = "Dolor final",
+                        value = "${sesion.nivelDolor ?: "--"}/10",
                         modifier = Modifier.weight(1f)
                     )
 
                     SessionStatisticCard(
-                        label = "Dolor final",
-                        value = "3/10",
+                        label = "Estado",
+                        value = sesion.estado,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -191,71 +171,27 @@ fun SessionDetailScreen(
                 Spacer(Modifier.height(20.dp))
 
                 // Ejercicios realizados
-                Text(
-                    text = "Ejercicios realizados",
-                    color = SessionText,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                exampleExercises.forEach { exercise ->
-                    ExerciseDetailCard(exercise)
-
-                    Spacer(Modifier.height(8.dp))
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                // Evidencia fotográfica
-                Text(
-                    text = "Evidencia fotográfica",
-                    color = SessionText,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(Modifier.height(14.dp))
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp)
-                ) {
+                if (uiState.ejercicios.isEmpty()) {
                     Text(
-                        text = "Sentadilla asistida",
-                        color = SessionText,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Spacer(Modifier.height(10.dp))
-
-                    Image(
-                        painter = painterResource(
-                            id = R.drawable.evidencia_sentadilla
-                        ),
-                        contentDescription = "Evidencia de sentadilla asistida",
+                        text = "No hay ejercicios registrados en esta sesión.",
+                        color = SessionSecondary,
+                        fontSize = 13.sp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable {
-                                showEvidence.value = true
-                            },
-                        contentScale = ContentScale.Crop
+                            .padding(vertical = 12.dp),
+                        textAlign = TextAlign.Center
                     )
+                } else {
+                    uiState.ejercicios.forEach { ejercicio ->
 
-                    Spacer(Modifier.height(8.dp))
+                        ExerciseDetailCard(
+                            exercise = ejercicio.nombre,
+                            details = "${ejercicio.registros.size} de " +
+                                    "${ejercicio.seriesAsignadas} series registradas",
+                            registros = ejercicio.registros
+                        )
 
-                    TextButton(
-                        onClick = {
-                            showEvidence.value = true
-                        },
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) {
-                        Text("Ver evidencia fotográfica")
+                        Spacer(Modifier.height(8.dp))
                     }
                 }
             }
@@ -311,8 +247,14 @@ private fun SessionStatisticCard(
 
 @Composable
 private fun ExerciseDetailCard(
-    exercise: CompletedExercise
+    exercise: String,
+    details: String,
+    registros: List<RegistroSerieEntity>
 ) {
+    val totalRepeticiones = registros.sumOf {
+        it.repeticionesRealizadas
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -324,7 +266,7 @@ private fun ExerciseDetailCard(
             .padding(horizontal = 13.dp, vertical = 11.dp)
     ) {
         Text(
-            text = exercise.name,
+            text = exercise,
             color = SessionText,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold
@@ -333,9 +275,59 @@ private fun ExerciseDetailCard(
         Spacer(Modifier.height(5.dp))
 
         Text(
-            text = exercise.details,
+            text = details,
             color = SessionSecondary,
             fontSize = 11.sp
         )
+
+        Spacer(Modifier.height(10.dp))
+
+        registros.sortedBy { it.numeroSerie }.forEach { registro ->
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 3.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Serie ${registro.numeroSerie}",
+                    color = SessionSecondary,
+                    fontSize = 12.sp
+                )
+
+                Text(
+                    text = "${registro.repeticionesRealizadas} repeticiones",
+                    color = SessionText,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        HorizontalDivider(color = SessionBorder)
+
+        Spacer(Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Total realizado",
+                color = SessionText,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Text(
+                text = "$totalRepeticiones repeticiones",
+                color = SessionBlue,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }

@@ -3,7 +3,6 @@ package com.rehabtrack.app.ui.screens.patient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,46 +31,37 @@ import com.rehabtrack.app.ui.components.PatientBottomBar
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-
-private data class SessionHistoryItem(
-    val date: String,
-    val title: String,
-    val exercises: Int,
-    val duration: Int,
-    val painLevel: Int
-)
-
-private val sampleHistory = listOf(
-    SessionHistoryItem(
-        date = "30 septiembre 2026",
-        title = "Fortalecimiento de rodilla",
-        exercises = 3,
-        duration = 20,
-        painLevel = 3
-    ),
-    SessionHistoryItem(
-        date = "28 septiembre 2026",
-        title = "Movilidad de rodilla",
-        exercises = 4,
-        duration = 25,
-        painLevel = 4
-    ),
-    SessionHistoryItem(
-        date = "26 septiembre 2026",
-        title = "Fortalecimiento de rodilla",
-        exercises = 3,
-        duration = 20,
-        painLevel = 5
-    )
-)
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.CircularProgressIndicator
+import com.rehabtrack.app.ui.viewmodel.HistoryViewModel
+import com.rehabtrack.app.ui.viewmodel.HistorySessionItem
 
 @Composable
 fun HistoryScreen(
     navController: NavController,
-    patientName: String? = null
+    idUsuario: Int? = null,
+    idPaciente: Int? = null
 ) {
     val colors = MaterialTheme.colorScheme
-    val isPhysioterapist = patientName != null
+
+    val historyViewModel: HistoryViewModel = viewModel()
+
+    val uiState by historyViewModel.uiState.collectAsState()
+
+    LaunchedEffect(idUsuario, idPaciente) {
+        historyViewModel.cargarHistorial(
+            idUsuario = idUsuario,
+            idPaciente = idPaciente
+        )
+    }
+
+    val isPhysioterapist = idPaciente != null
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -77,10 +69,11 @@ fun HistoryScreen(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            if(!isPhysioterapist) {
+            if(!isPhysioterapist && idUsuario != null) {
                 PatientBottomBar(
                     navController = navController,
-                    currentRoute = currentRoute
+                    currentRoute = currentRoute,
+                    idUsuario = idUsuario
                 )
             }
         }
@@ -89,24 +82,51 @@ fun HistoryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .then(
+                    if (isPhysioterapist) {
+                        Modifier.navigationBarsPadding()
+                    } else {
+                        Modifier
+                    }
+                )
                 .verticalScroll(rememberScrollState())
                 .background(colors.background)
         ) {
             // Encabezado
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(colors.primary)
                     .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center
+                    .height(56.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                if (isPhysioterapist) {
+                    IconButton(
+                        onClick = {
+                            navController.popBackStack()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Regresar",
+                            tint = colors.onPrimary
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.width(48.dp))
+                }
+
                 Text(
                     text = "RehabTrack",
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleLarge,
                     color = colors.onPrimary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
+
+                Spacer(modifier = Modifier.width(48.dp))
             }
 
             Column(
@@ -129,19 +149,6 @@ fun HistoryScreen(
                     textAlign = TextAlign.Center
                 )
 
-                if (isPhysioterapist) {
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = patientName.orEmpty(),
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.onBackground,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
@@ -153,24 +160,44 @@ fun HistoryScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                sampleHistory.forEachIndexed { index, session ->
-                    HistorySessionItem(
-                        session = session,
-                        onViewMore = {
-                            if (patientName == null) {
-                                navController.navigate(Routes.SessionDetail.route)
-                            } else {
-                                navController.navigate(
-                                    "${Routes.SessionDetail.route}/${
-                                        java.net.URLEncoder.encode(patientName, "UTF-8")
-                                    }"
-                                )
+                when {
+                    uiState.cargando -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
+
+                    uiState.mensajeError != null -> {
+                        Text(
+                            text = uiState.mensajeError ?: "Error al cargar el historial",
+                            color = colors.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    uiState.sesiones.isEmpty() -> {
+                        Text(
+                            text = "Todavía no hay sesiones registradas.",
+                            color = colors.onBackground,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    else -> {
+                        uiState.sesiones.forEachIndexed { index, session ->
+                            HistorySessionItem(
+                                session = session,
+                                onViewMore = {
+                                    navController.navigate(
+                                        "${Routes.SessionDetail.route}/${session.sesion.idSesion}"
+                                    )
+                                }
+                            )
+
+                            if (index < uiState.sesiones.lastIndex) {
+                                Spacer(modifier = Modifier.height(40.dp))
                             }
                         }
-                    )
-
-                    if (index < sampleHistory.lastIndex) {
-                        Spacer(modifier = Modifier.height(40.dp))
                     }
                 }
 
@@ -182,16 +209,17 @@ fun HistoryScreen(
 
 @Composable
 private fun HistorySessionItem(
-    session: SessionHistoryItem,
+    session: HistorySessionItem,
     onViewMore: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
+    val sesion = session.sesion
 
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = session.date,
+            text = "${sesion.fecha} · ${sesion.hora}",
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onBackground,
             fontWeight = FontWeight.SemiBold
@@ -200,7 +228,7 @@ private fun HistorySessionItem(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = session.title,
+            text = session.nombrePrograma,
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onBackground,
             fontWeight = FontWeight.Medium
@@ -209,7 +237,7 @@ private fun HistorySessionItem(
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-            text = "${session.exercises} ejercicios · ${session.duration} min",
+            text = "Estado: ${sesion.estado}",
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onBackground
         )
@@ -222,7 +250,9 @@ private fun HistorySessionItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Dolor: ${session.painLevel}/10",
+                text = sesion.nivelDolor?.let {
+                    "Dolor: $it/10"
+                } ?: "Dolor: No registrado",
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onBackground
             )

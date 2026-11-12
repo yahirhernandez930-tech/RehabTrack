@@ -42,4 +42,14 @@ interface ProgramaDao {
     suspend fun obtenerProgramasFisioterapeuta(
         idFisioterapeuta: Int
     ): List<ProgramaEntity>
+
+    @Query("""
+    SELECT * FROM programas
+    WHERE idPrograma = :idPrograma
+    LIMIT 1
+    """)
+    suspend fun obtenerProgramaPorId(
+        idPrograma: Int
+    ): ProgramaEntity?
+
 }

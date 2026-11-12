@@ -28,7 +28,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +52,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import java.util.Calendar
 import java.util.Locale
@@ -366,6 +364,29 @@ fun PatientDetailScreen(
                                 )
                             }
                         )
+
+                        Spacer(modifier = Modifier.height(25.dp))
+
+                        Button(
+                            onClick = {
+                                navController.navigate(
+                                    "${com.rehabtrack.app.navigation.Routes.History.route}/patient/$idPaciente"
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(45.dp),
+                            shape = RoundedCornerShape(9.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DetailBlue
+                            )
+                        ) {
+                            Text(
+                                text = "Consultar historial de sesiones",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(25.dp))
                     }

@@ -38,7 +38,8 @@ private val PainValues = listOf(5.5f, 4.8f, 3.5f, 2.6f)
 
 @Composable
 fun ProgressScreen(
-    navController: NavController
+    navController: NavController,
+    idUsuario: Int
 ) {
     val colors = MaterialTheme.colorScheme
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -50,7 +51,8 @@ fun ProgressScreen(
         bottomBar = {
             PatientBottomBar(
                 navController = navController,
-                currentRoute = currentRoute
+                currentRoute = currentRoute,
+                idUsuario = idUsuario
             )
         }
     ) { innerPadding ->

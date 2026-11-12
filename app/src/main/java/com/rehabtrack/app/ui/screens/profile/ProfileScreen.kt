@@ -32,7 +32,10 @@ import com.rehabtrack.app.navigation.Routes
 import com.rehabtrack.app.ui.components.PatientBottomBar
 
 @Composable
-fun ProfileScreen(navController: NavController) {
+fun ProfileScreen(
+    navController: NavController,
+    idUsuario: Int
+) {
     val colors = MaterialTheme.colorScheme
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -43,7 +46,8 @@ fun ProfileScreen(navController: NavController) {
         bottomBar = {
             PatientBottomBar(
                 navController = navController,
-                currentRoute = currentRoute
+                currentRoute = currentRoute,
+                idUsuario = idUsuario
             )
         }
     ) { innerPadding ->

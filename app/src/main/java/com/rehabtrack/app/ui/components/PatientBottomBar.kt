@@ -21,19 +21,26 @@ import com.rehabtrack.app.navigation.Routes
 @Composable
 fun PatientBottomBar(
     navController: NavController,
-    currentRoute: String?
+    currentRoute: String?,
+    idUsuario: Int
 ) {
     val colors = MaterialTheme.colorScheme
+
+    val homeRoute = "${Routes.Home.route}/$idUsuario"
+    val progressRoute = "${Routes.Progress.route}/$idUsuario"
+    val historyRoute = "${Routes.History.route}/$idUsuario"
+    val profileRoute = "${Routes.Profile.route}/$idUsuario"
 
     NavigationBar(
         containerColor = colors.background,
         contentColor = colors.primary,
         tonalElevation = 0.dp
     ) {
+
         NavigationBarItem(
-            selected = currentRoute == Routes.Home.route,
+            selected = currentRoute == "${Routes.Home.route}/{idUsuario}",
             onClick = {
-                navigateTo(navController, Routes.Home.route)
+                navigateTo(navController, homeRoute, idUsuario)
             },
             icon = {
                 Icon(
@@ -47,9 +54,9 @@ fun PatientBottomBar(
         )
 
         NavigationBarItem(
-            selected = currentRoute == Routes.Progress.route,
+            selected = currentRoute == "${Routes.Progress.route}/{idUsuario}",
             onClick = {
-                navigateTo(navController, Routes.Progress.route)
+                navigateTo(navController, progressRoute, idUsuario)
             },
             icon = {
                 Icon(
@@ -63,9 +70,9 @@ fun PatientBottomBar(
         )
 
         NavigationBarItem(
-            selected = currentRoute == Routes.History.route,
+            selected = currentRoute == "${Routes.History.route}/{idUsuario}",
             onClick = {
-                navigateTo(navController, Routes.History.route)
+                navigateTo(navController, historyRoute, idUsuario)
             },
             icon = {
                 Icon(
@@ -79,9 +86,9 @@ fun PatientBottomBar(
         )
 
         NavigationBarItem(
-            selected = currentRoute == Routes.Profile.route,
+            selected = currentRoute == "${Routes.Profile.route}/{idUsuario}",
             onClick = {
-                navigateTo(navController, Routes.Profile.route)
+                navigateTo(navController, profileRoute, idUsuario)
             },
             icon = {
                 Icon(
@@ -108,15 +115,14 @@ private fun navigationItemColors() =
 
 private fun navigateTo(
     navController: NavController,
-    route: String
+    route: String,
+    idUsuario: Int
 ) {
-    if (navController.currentDestination?.route != route) {
-        navController.navigate(route) {
-            popUpTo(Routes.Home.route) {
-                saveState = true
-            }
-            launchSingleTop = true
-            restoreState = true
+    navController.navigate(route) {
+        popUpTo("${Routes.Home.route}/{idUsuario}") {
+            saveState = true
         }
+        launchSingleTop = true
+        restoreState = true
     }
 }

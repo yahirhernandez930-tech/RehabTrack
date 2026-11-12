@@ -36,4 +36,10 @@ class ProgramaRepository(
     ): List<ProgramaEntity> {
         return programaDao.obtenerProgramasFisioterapeuta(idFisioterapeuta)
     }
+
+    suspend fun obtenerProgramaPorId(
+        idPrograma: Int
+    ): ProgramaEntity? {
+        return programaDao.obtenerProgramaPorId(idPrograma)
+    }
 }
