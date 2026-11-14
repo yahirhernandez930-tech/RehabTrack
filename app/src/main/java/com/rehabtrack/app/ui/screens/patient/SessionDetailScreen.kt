@@ -20,6 +20,19 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.rehabtrack.app.ui.viewmodel.SessionDetailUiState
 import com.rehabtrack.app.data.local.entity.RegistroSerieEntity
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.window.Dialog
+import java.io.File
+import com.rehabtrack.app.data.local.entity.EvidenciaEntity
 
 private val SessionBlue = Color(0xFF1976D2)
 private val SessionText = Color(0xFF263238)
@@ -72,6 +85,70 @@ fun SessionDetailScreen(
     }
 
     val sesion = uiState.sesion ?: return
+
+    var evidenciaSeleccionada by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    if (evidenciaSeleccionada != null) {
+
+        val bitmapAmpliado = remember(evidenciaSeleccionada) {
+            evidenciaSeleccionada?.let { ruta ->
+                cargarImagenDetalle(File(ruta))
+            }
+        }
+
+        Dialog(
+            onDismissRequest = {
+                evidenciaSeleccionada = null
+            }
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Evidencia fotográfica",
+                        color = SessionText,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+
+                    if (bitmapAmpliado != null) {
+                        Image(
+                            bitmap = bitmapAmpliado.asImageBitmap(),
+                            contentDescription = "Fotografía del ejercicio",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(360.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Text(
+                            text = "No se pudo cargar la fotografía.",
+                            color = SessionSecondary
+                        )
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    Button(
+                        onClick = {
+                            evidenciaSeleccionada = null
+                        }
+                    ) {
+                        Text("Cerrar")
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
         containerColor = Color.White,
@@ -188,7 +265,11 @@ fun SessionDetailScreen(
                             exercise = ejercicio.nombre,
                             details = "${ejercicio.registros.size} de " +
                                     "${ejercicio.seriesAsignadas} series registradas",
-                            registros = ejercicio.registros
+                            registros = ejercicio.registros,
+                            evidencias = ejercicio.evidencias,
+                            onEvidenceClick = { ruta ->
+                                evidenciaSeleccionada = ruta
+                            }
                         )
 
                         Spacer(Modifier.height(8.dp))
@@ -249,7 +330,9 @@ private fun SessionStatisticCard(
 private fun ExerciseDetailCard(
     exercise: String,
     details: String,
-    registros: List<RegistroSerieEntity>
+    registros: List<RegistroSerieEntity>,
+    evidencias: List<EvidenciaEntity>,
+    onEvidenceClick: (String) -> Unit
 ) {
     val totalRepeticiones = registros.sumOf {
         it.repeticionesRealizadas
@@ -329,5 +412,119 @@ private fun ExerciseDetailCard(
                 fontWeight = FontWeight.Bold
             )
         }
+
+        if (evidencias.isNotEmpty()) {
+
+            Spacer(Modifier.height(12.dp))
+
+            HorizontalDivider(color = SessionBorder)
+
+            Spacer(Modifier.height(10.dp))
+
+            Text(
+                text = "Evidencias fotográficas (${evidencias.size})",
+                color = SessionText,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            evidencias.chunked(2).forEach { fila ->
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    fila.forEach { evidencia ->
+
+                        val bitmap = remember(evidencia.rutaArchivo) {
+                            cargarImagenDetalle(File(evidencia.rutaArchivo))
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(105.dp)
+                                .background(
+                                    SessionLightBlue,
+                                    RoundedCornerShape(9.dp)
+                                )
+                                .clickable {
+                                    onEvidenceClick(evidencia.rutaArchivo)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (bitmap != null) {
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "Evidencia fotográfica",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(2.dp),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    text = "Imagen no disponible",
+                                    color = SessionSecondary,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                    }
+
+                    if (fila.size == 1) {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+private fun cargarImagenDetalle(archivo: File): Bitmap? {
+    return try {
+        if (!archivo.exists()) return null
+
+        val opciones = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+
+        BitmapFactory.decodeFile(
+            archivo.absolutePath,
+            opciones
+        )
+
+        val anchoObjetivo = 360
+        val altoObjetivo = 300
+
+        var escala = 1
+
+        while (
+            opciones.outWidth / escala > anchoObjetivo * 2 ||
+            opciones.outHeight / escala > altoObjetivo * 2
+        ) {
+            escala *= 2
+        }
+
+        val opcionesFinales = BitmapFactory.Options().apply {
+            inSampleSize = escala
+        }
+
+        BitmapFactory.decodeFile(
+            archivo.absolutePath,
+            opcionesFinales
+        )
+
+    } catch (e: Exception) {
+        android.util.Log.e(
+            "SessionDetail",
+            "Error al cargar evidencia",
+            e
+        )
+        null
     }
 }

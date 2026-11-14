@@ -11,13 +11,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.rehabtrack.app.data.local.entity.EvidenciaEntity
 
 data class ExerciseDetailData(
     val idEjercicio: Int,
     val nombre: String,
     val seriesAsignadas: Int,
     val repeticionesObjetivo: Int,
-    val registros: List<RegistroSerieEntity>
+    val registros: List<RegistroSerieEntity>,
+    val evidencias: List<EvidenciaEntity> = emptyList()
 ) {
     val totalRepeticiones: Int
         get() = registros.sumOf { it.repeticionesRealizadas }
@@ -44,6 +46,7 @@ class SessionDetailViewModel(
     private val programaEjercicioRepository = provider.programaEjercicioRepository
     private val ejercicioRepository = provider.ejercicioRepository
     private val registroSerieRepository = provider.registroSerieRepository
+    private val evidenciaRepository = provider.evidenciaRepository
 
     private val _uiState = MutableStateFlow(SessionDetailUiState())
     val uiState = _uiState.asStateFlow()
@@ -84,7 +87,14 @@ class SessionDetailViewModel(
                             )
                             .sortedBy { it.numeroSerie }
 
-                        if (registros.isEmpty()) {
+                        val evidencias = evidenciaRepository
+                            .obtenerEvidenciasEjercicio(
+                                idSesion = idSesion,
+                                idEjercicio = asignacion.idEjercicio
+                            )
+                            .sortedBy { it.fechaCaptura }
+
+                        if (registros.isEmpty() && evidencias.isEmpty()) {
                             null
                         } else {
                             val ejercicio = ejercicioRepository
@@ -97,7 +107,8 @@ class SessionDetailViewModel(
                                     seriesAsignadas = asignacion.series,
                                     repeticionesObjetivo =
                                         asignacion.repeticiones,
-                                    registros = registros
+                                    registros = registros,
+                                    evidencias = evidencias
                                 )
                             }
                         }

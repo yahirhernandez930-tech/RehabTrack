@@ -46,6 +46,7 @@ import com.rehabtrack.app.ui.viewmodel.ChangePasswordViewModel
 import com.rehabtrack.app.ui.screens.physiotherapist.PhysiotherapistProfileScreen
 import com.rehabtrack.app.ui.viewmodel.PhysiotherapistProfileViewModel
 import com.rehabtrack.app.ui.viewmodel.ProgressViewModel
+import com.rehabtrack.app.ui.viewmodel.EvidenciaViewModel
 
 @Composable
 fun AppNavigation() {
@@ -381,9 +382,18 @@ fun AppNavigation() {
                 if (ejercicio != null) {
                     val progressViewModel: SessionProgressViewModel = viewModel()
                     val progressState by progressViewModel.uiState.collectAsState()
+                    val evidenciaViewModel: EvidenciaViewModel = viewModel()
+                    val evidenciaState by evidenciaViewModel.uiState.collectAsState()
 
                     LaunchedEffect(idSesion, ejercicio.idEjercicio) {
                         progressViewModel.cargarProgreso(
+                            idSesion = idSesion,
+                            idEjercicio = ejercicio.idEjercicio
+                        )
+                    }
+
+                    LaunchedEffect(idSesion, ejercicio.idEjercicio) {
+                        evidenciaViewModel.cargarEvidencias(
                             idSesion = idSesion,
                             idEjercicio = ejercicio.idEjercicio
                         )
@@ -401,12 +411,22 @@ fun AppNavigation() {
                         cargandoProgreso = progressState.cargando,
                         guardandoSerie = progressState.guardando,
                         mensajeError = progressState.mensajeError,
+                        evidencias = evidenciaState.evidencias,
+                        guardandoEvidencia = evidenciaState.guardando,
+                        mensajeErrorEvidencia = evidenciaState.mensajeError,
                         onRegistrarSerie = { numeroSerie, repeticionesRealizadas ->
                             progressViewModel.registrarSerie(
                                 idSesion = idSesion,
                                 idEjercicio = ejercicio.idEjercicio,
                                 numeroSerie = numeroSerie,
                                 repeticionesRealizadas = repeticionesRealizadas
+                            )
+                        },
+                        onFotografiaCapturada = { rutaArchivo ->
+                            evidenciaViewModel.registrarEvidencia(
+                                idSesion = idSesion,
+                                idEjercicio = ejercicio.idEjercicio,
+                                rutaArchivo = rutaArchivo
                             )
                         }
                     )

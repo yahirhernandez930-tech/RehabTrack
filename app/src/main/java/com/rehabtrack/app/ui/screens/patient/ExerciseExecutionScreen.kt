@@ -49,6 +49,21 @@ import androidx.compose.material3.Surface
 import com.rehabtrack.app.data.local.entity.RegistroSerieEntity
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.CircularProgressIndicator
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalContext
+import com.rehabtrack.app.util.EvidenciaStorage
+import java.io.File
+import com.rehabtrack.app.data.local.entity.EvidenciaEntity
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.window.Dialog
 
 private val RehabBlueLight = Color(0xFFE3F2FD)
 
@@ -65,9 +80,126 @@ fun ExerciseExecutionScreen(
     cargandoProgreso: Boolean,
     guardandoSerie: Boolean,
     mensajeError: String?,
-    onRegistrarSerie: (Int, Int) -> Unit
+    onRegistrarSerie: (Int, Int) -> Unit,
+    onFotografiaCapturada: (String) -> Unit = {},
+    evidencias: List<EvidenciaEntity> = emptyList(),
+    guardandoEvidencia: Boolean = false,
+    mensajeErrorEvidencia: String? = null
 ) {
     val colors = MaterialTheme.colorScheme
+
+    val context = LocalContext.current
+
+    var evidenciaSeleccionada by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    if (evidenciaSeleccionada != null) {
+        val bitmapAmpliado = remember(evidenciaSeleccionada) {
+            evidenciaSeleccionada?.let { ruta ->
+                cargarImagenPrevia(File(ruta))
+            }
+        }
+
+        Dialog(
+            onDismissRequest = {
+                evidenciaSeleccionada = null
+            }
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = colors.surface
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Evidencia fotográfica",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (bitmapAmpliado != null) {
+                        Image(
+                            bitmap = bitmapAmpliado.asImageBitmap(),
+                            contentDescription = "Fotografía ampliada",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(360.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Text(
+                            text = "No se pudo cargar la fotografía.",
+                            color = colors.error
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            evidenciaSeleccionada = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Cerrar")
+                    }
+                }
+            }
+        }
+    }
+
+    // Archivo que se mostrará en la vista previa.
+    var fotografiaActual by remember {
+        mutableStateOf<File?>(null)
+    }
+
+    // Archivo preparado para recibir la siguiente fotografía.
+    var archivoPendiente by remember {
+        mutableStateOf<File?>(null)
+    }
+
+    var uriFotografia by remember {
+        mutableStateOf<Uri?>(null)
+    }
+
+    var errorFotografia by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    val launcherCamara = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { fotografiaGuardada ->
+
+        val archivo = archivoPendiente
+
+        if (
+            fotografiaGuardada &&
+            archivo != null &&
+            archivo.exists() &&
+            archivo.length() > 0
+        ) {
+            // Actualizamos el estado de la vista previa
+            fotografiaActual = archivo
+
+            errorFotografia = null
+
+            onFotografiaCapturada(archivo.absolutePath)
+
+        } else {
+            archivo?.delete()
+
+            errorFotografia = "No se pudo capturar la fotografía."
+        }
+
+        archivoPendiente = null
+    }
 
     var repeticionesActuales by remember {
         mutableIntStateOf(0)
@@ -416,7 +548,20 @@ fun ExerciseExecutionScreen(
                         color = colors.onBackground
                     )
 
+                    Text(
+                        text = "${evidencias.size} fotografías guardadas",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant
+                    )
+
                     Spacer(modifier = Modifier.height(14.dp))
+
+                    val archivoVistaPrevia = fotografiaActual
+                        ?: evidencias.lastOrNull()?.rutaArchivo?.let { File(it) }
+
+                    val bitmap = remember(archivoVistaPrevia) {
+                        archivoVistaPrevia?.let { cargarImagenPrevia(it) }
+                    }
 
                     Box(
                         modifier = Modifier
@@ -426,18 +571,107 @@ fun ExerciseExecutionScreen(
                             .background(colors.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Evidencia fotográfica del ejercicio",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = "Sin fotografía",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Galería de evidencias guardadas
+                    if (evidencias.isNotEmpty()) {
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         Text(
-                            text = "Sin fotografía",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onSurfaceVariant
+                            text = "Fotografías guardadas",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.onBackground,
+                            modifier = Modifier.align(Alignment.Start)
                         )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        evidencias.chunked(2).forEach { fila ->
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+
+                                fila.forEach { evidencia ->
+
+                                    val bitmapMiniatura = remember(evidencia.rutaArchivo) {
+                                        cargarImagenPrevia(File(evidencia.rutaArchivo))
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(110.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(colors.surfaceVariant)
+                                            .clickable {
+                                                evidenciaSeleccionada = evidencia.rutaArchivo
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+
+                                        if (bitmapMiniatura != null) {
+                                            Image(
+                                                bitmap = bitmapMiniatura.asImageBitmap(),
+                                                contentDescription = "Evidencia fotográfica",
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        } else {
+                                            Text(
+                                                text = "Imagen no disponible",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = colors.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Mantiene el ancho de la cuadrícula
+                                // cuando existe una cantidad impar de fotografías.
+                                if (fila.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Button(
                         onClick = {
-                            // Próximo paso: conectar la cámara del teléfono.
+                            try {
+                                val archivo = EvidenciaStorage.crearArchivoEvidencia(context)
+                                val uri = EvidenciaStorage.obtenerUri(context, archivo)
+
+                                // Guardamos el archivo pendiente, sin modificar la vista previa.
+                                archivoPendiente = archivo
+                                uriFotografia = uri
+
+                                launcherCamara.launch(uri)
+
+                            } catch (e: Exception) {
+                                errorFotografia = "No se pudo abrir la cámara."
+                            }
                         },
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
@@ -450,6 +684,49 @@ fun ExerciseExecutionScreen(
                     ) {
                         Text("Tomar fotografía")
                     }
+
+                    if (guardandoEvidencia) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Text(
+                                text = "Guardando evidencia...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    mensajeErrorEvidencia?.let { error ->
+                        Text(
+                            text = error,
+                            color = colors.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+
+                errorFotografia?.let { error ->
+                    Text(
+                        text = error,
+                        color = colors.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -467,5 +744,43 @@ fun ExerciseExecutionScreen(
                 }
             }
         }
+    }
+}
+
+private fun cargarImagenPrevia(archivo: File): Bitmap? {
+    return try {
+        val opciones = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+
+        BitmapFactory.decodeFile(archivo.absolutePath, opciones)
+
+        val anchoObjetivo = 360
+        val altoObjetivo = 300
+
+        var escala = 1
+
+        while (
+            opciones.outWidth / escala > anchoObjetivo * 2 ||
+            opciones.outHeight / escala > altoObjetivo * 2
+        ) {
+            escala *= 2
+        }
+
+        val opcionesFinales = BitmapFactory.Options().apply {
+            inSampleSize = escala
+        }
+
+        BitmapFactory.decodeFile(
+            archivo.absolutePath,
+            opcionesFinales
+        )
+    } catch (e: Exception) {
+        android.util.Log.e(
+            "RehabTrackCamera",
+            "Error al cargar vista previa",
+            e
+        )
+        null
     }
 }

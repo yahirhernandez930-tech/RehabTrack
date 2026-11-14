@@ -33,6 +33,9 @@ import com.rehabtrack.app.data.local.dao.RegistroSerieDao
 import com.rehabtrack.app.data.local.entity.RegistroSerieEntity
 import androidx.room.Index
 
+import com.rehabtrack.app.data.local.dao.EvidenciaDao
+import com.rehabtrack.app.data.local.entity.EvidenciaEntity
+
 @Database(
     entities = [
         UsuarioEntity::class,
@@ -43,9 +46,10 @@ import androidx.room.Index
         EjercicioEntity::class,
         ProgramaEjercicioEntity::class,
         SesionEntity::class,
-        RegistroSerieEntity::class
+        RegistroSerieEntity::class,
+        EvidenciaEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class RehabDatabase : RoomDatabase() {
@@ -69,6 +73,8 @@ abstract class RehabDatabase : RoomDatabase() {
     abstract fun sesionDao(): SesionDao
 
     abstract fun registroSerieDao(): RegistroSerieDao
+
+    abstract fun evidenciaDao(): EvidenciaDao
 
     suspend fun <T> ejecutarTransaccion(
         operacion: suspend () -> T
@@ -206,6 +212,38 @@ abstract class RehabDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+
+            override fun migrate(db: SupportSQLiteDatabase) {
+
+                db.execSQL("""
+            CREATE TABLE IF NOT EXISTS evidencias (
+                idEvidencia INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                idSesion INTEGER NOT NULL,
+                idEjercicio INTEGER NOT NULL,
+                rutaArchivo TEXT NOT NULL,
+                fechaCaptura INTEGER NOT NULL,
+                FOREIGN KEY(idSesion)
+                    REFERENCES sesiones(idSesion)
+                    ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(idEjercicio)
+                    REFERENCES ejercicios(idEjercicio)
+                    ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """)
+
+                db.execSQL("""
+            CREATE INDEX IF NOT EXISTS index_evidencias_idSesion
+            ON evidencias(idSesion)
+        """)
+
+                db.execSQL("""
+            CREATE INDEX IF NOT EXISTS index_evidencias_idEjercicio
+            ON evidencias(idEjercicio)
+        """)
+            }
+        }
+
         fun getDatabase(context: Context): RehabDatabase {
 
             return INSTANCE ?: synchronized(this) {
@@ -218,7 +256,8 @@ abstract class RehabDatabase : RoomDatabase() {
                     .addMigrations(
                         MIGRATION_1_2,
                         MIGRATION_2_3,
-                        MIGRATION_3_4
+                        MIGRATION_3_4,
+                        MIGRATION_4_5
                     )
                     .build()
 
