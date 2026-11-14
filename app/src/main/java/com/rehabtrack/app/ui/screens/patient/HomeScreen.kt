@@ -40,6 +40,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import com.rehabtrack.app.ui.viewmodel.EjercicioDebugViewModel
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun HomeScreen(
@@ -147,17 +152,23 @@ fun HomeScreen(
                 is HomeUiState.Success -> {
 
                     Column(
-                        modifier = Modifier.padding(
-                            horizontal = 20.dp,
-                            vertical = 18.dp
-                        )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 360.dp)
+                            .align(Alignment.CenterHorizontally)
+                            .padding(
+                                horizontal = 20.dp,
+                                vertical = 18.dp
+                            )
                     ) {
                         // Saludo
                         Text(
                             text = "Hola, ${estado.paciente.nombre} 👋",
                             style = MaterialTheme.typography.titleLarge,
                             color = colors.onBackground,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
@@ -165,7 +176,9 @@ fun HomeScreen(
                         Text(
                             text = "Continúa con tu rehabilitación",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onSurfaceVariant
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
                         )
 
                         Spacer(modifier = Modifier.height(26.dp))
@@ -208,13 +221,43 @@ fun HomeScreen(
                             fontWeight = FontWeight.SemiBold
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(
-                            text = "Tu avance aparecerá aquí cuando registremos tus sesiones.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onSurfaceVariant
-                        )
+                        if (estado.programa != null) {
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                Text(
+                                    text = "Progreso ${estado.progreso}%",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = colors.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            LinearProgressIndicator(
+                                progress = estado.progreso / 100f,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(7.dp),
+                                color = colors.primary,
+                                trackColor = colors.surfaceVariant
+                            )
+
+                        } else {
+
+                            Text(
+                                text = "No tienes un programa de rehabilitación activo.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colors.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         // Próxima sesión
                         Spacer(modifier = Modifier.height(26.dp))
@@ -318,11 +361,44 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.height(18.dp))
 
-                        Text(
-                            text = "Todavía no hay sesiones registradas.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = colors.onSurfaceVariant
-                        )
+                        if (estado.sesionesRecientes.isNotEmpty()) {
+
+                            Text(
+                                text = "${estado.sesionesRecientes.size} sesiones recientes",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = colors.onBackground,
+                                fontWeight = FontWeight.SemiBold
+                            )
+
+                            if (estado.ultimoNivelDolor != null) {
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = "Dolor: ${estado.ultimoNivelDolor}/10",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = colors.onBackground
+                                )
+
+                            } else {
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = "Sin nivel de dolor registrado.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = colors.onSurfaceVariant
+                                )
+                            }
+
+                        } else {
+
+                            Text(
+                                text = "Todavía no hay sesiones registradas.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = colors.onSurfaceVariant
+                            )
+                        }
 
                     }
                 }

@@ -21,7 +21,10 @@ sealed interface HomeUiState {
         val paciente: PacienteEntity,
         val programa: ProgramaEntity?,
         val ejercicios: List<EjercicioInicioData>,
-        val proximaSesion: SesionEntity?
+        val proximaSesion: SesionEntity?,
+        val progreso: Int = 0,
+        val sesionesRecientes: List<SesionEntity> = emptyList(),
+        val ultimoNivelDolor: Int? = null
     ) : HomeUiState
 
     data class Error(
@@ -103,6 +106,50 @@ class HomeViewModel(application: Application) :
                         emptyList()
                     }
 
+                    // Recuperar todas las sesiones del programa
+                    val sesionesPrograma = if (programa != null) {
+                        sesionRepository.obtenerSesionesPrograma(
+                            programa.idPrograma
+                        )
+                    } else {
+                        emptyList()
+                    }
+
+                    // Identificar las sesiones finalizadas
+                    val sesionesFinalizadas = sesionesPrograma.filter {
+                        it.estado.equals("Finalizada", ignoreCase = true)
+                    }
+
+                    // Calcular el progreso del programa
+                    val progreso = if (
+                        programa != null &&
+                        programa.duracionSesiones > 0
+                    ) {
+                        (
+                                sesionesFinalizadas.size * 100f /
+                                        programa.duracionSesiones
+                                ).toInt().coerceIn(0, 100)
+                    } else {
+                        0
+                    }
+
+                    // Obtener las tres sesiones finalizadas más recientes
+                    val sesionesRecientes = sesionesFinalizadas
+                        .sortedWith(
+                            compareByDescending<SesionEntity> { it.fecha }
+                                .thenByDescending { it.hora }
+                        )
+                        .take(3)
+
+                    // Obtener el último nivel de dolor registrado
+                    val ultimoNivelDolor = sesionesFinalizadas
+                        .filter { it.nivelDolor != null }
+                        .maxWithOrNull(
+                            compareBy<SesionEntity> { it.fecha }
+                                .thenBy { it.hora }
+                        )
+                        ?.nivelDolor
+
                     // Obtener la próxima sesión pendiente
                     val proximaSesion = if (programa != null) {
 
@@ -120,16 +167,18 @@ class HomeViewModel(application: Application) :
                         null
                     }
 
-                // Devolver los datos del paciente, programa, ejercicios y sesión
-                    Triple(paciente, programa, ejercicios) to proximaSesion
+                    HomeUiState.Success(
+                        paciente = paciente,
+                        programa = programa,
+                        ejercicios = ejercicios,
+                        proximaSesion = proximaSesion,
+                        progreso = progreso,
+                        sesionesRecientes = sesionesRecientes,
+                        ultimoNivelDolor = ultimoNivelDolor
+                    )
                 }
 
-                _uiState.value = HomeUiState.Success(
-                    paciente = resultado.first.first,
-                    programa = resultado.first.second,
-                    ejercicios = resultado.first.third,
-                    proximaSesion = resultado.second
-                )
+                _uiState.value = resultado
 
             } catch (e: Exception) {
                 _uiState.value = HomeUiState.Error(
