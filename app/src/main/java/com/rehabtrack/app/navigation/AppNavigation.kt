@@ -43,6 +43,8 @@ import com.rehabtrack.app.ui.viewmodel.SessionDetailViewModel
 import com.rehabtrack.app.ui.viewmodel.ProfileViewModel
 import com.rehabtrack.app.ui.viewmodel.ChangeEmailViewModel
 import com.rehabtrack.app.ui.viewmodel.ChangePasswordViewModel
+import com.rehabtrack.app.ui.screens.physiotherapist.PhysiotherapistProfileScreen
+import com.rehabtrack.app.ui.viewmodel.PhysiotherapistProfileViewModel
 
 @Composable
 fun AppNavigation() {
@@ -499,7 +501,9 @@ fun AppNavigation() {
                         }
                     },
                     onProfileClick = {
-                        // Pendiente de implementar.
+                        navController.navigate("${Routes.PhysiotherapistProfile.route}/$idUsuario") {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -531,7 +535,9 @@ fun AppNavigation() {
                         }
                     },
                     onProfileClick = {
-                        // Pendiente de implementar.
+                        navController.navigate("${Routes.PhysiotherapistProfile.route}/$idUsuario") {
+                            launchSingleTop = true
+                        }
                     },
                     onPatientClick = { idPaciente ->
                         navController.navigate(
@@ -547,6 +553,51 @@ fun AppNavigation() {
                         navController.navigate(
                             "${Routes.RegisterPatient.route}/$idUsuario"
                         )
+                    }
+                )
+            }
+        }
+
+        composable("${Routes.PhysiotherapistProfile.route}/{idUsuario}") { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                val viewModel: PhysiotherapistProfileViewModel = viewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
+                LaunchedEffect(idUsuario) {
+                    viewModel.cargarPerfil(idUsuario)
+                }
+
+                PhysiotherapistProfileScreen(
+                    navController = navController,
+                    idUsuario = idUsuario,
+                    uiState = uiState,
+                    onHomeClick = {
+                        navController.navigate("${Routes.PhysiotherapistHome.route}/$idUsuario") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPatientsClick = {
+                        navController.navigate("${Routes.Patients.route}/$idUsuario") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = {
+                        navController.navigate("${Routes.PhysiotherapistProfile.route}/$idUsuario") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onLogout = {
+                        navController.navigate(Routes.Login.route) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = false
+                            }
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
