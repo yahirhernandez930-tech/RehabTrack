@@ -57,6 +57,7 @@ fun PhysiotherapistHomeScreen(
 ) {
 
     val uiState by homeViewModel.uiState.collectAsState()
+    val resumen = uiState as? PhysiotherapistHomeUiState.Success
 
     LaunchedEffect(idUsuario) {
         homeViewModel.cargarResumen(idUsuario)
@@ -130,7 +131,7 @@ fun PhysiotherapistHomeScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -138,9 +139,9 @@ fun PhysiotherapistHomeScreen(
                 ) {
                     SummaryCard(
                         title = "Pacientes activos",
-                        value = when (val state = uiState) {
+                        value = when (uiState) {
                             is PhysiotherapistHomeUiState.Success ->
-                                state.pacientesActivos.toString()
+                                resumen?.pacientesActivos?.toString() ?: "0"
 
                             PhysiotherapistHomeUiState.Loading,
                             PhysiotherapistHomeUiState.Idle -> "..."
@@ -152,7 +153,15 @@ fun PhysiotherapistHomeScreen(
 
                     SummaryCard(
                         title = "Sesiones de hoy",
-                        value = "—",
+                        value = when (uiState) {
+                            is PhysiotherapistHomeUiState.Success ->
+                                resumen?.sesionesHoy?.toString() ?: "0"
+
+                            PhysiotherapistHomeUiState.Loading,
+                            PhysiotherapistHomeUiState.Idle -> "..."
+
+                            is PhysiotherapistHomeUiState.Error -> "—"
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -165,13 +174,29 @@ fun PhysiotherapistHomeScreen(
                 ) {
                     SummaryCard(
                         title = "Requieren revisión",
-                        value = "—",
+                        value = when (uiState) {
+                            is PhysiotherapistHomeUiState.Success ->
+                                resumen?.pacientesRevision?.size?.toString() ?: "0"
+
+                            PhysiotherapistHomeUiState.Loading,
+                            PhysiotherapistHomeUiState.Idle -> "..."
+
+                            is PhysiotherapistHomeUiState.Error -> "—"
+                        },
                         modifier = Modifier.weight(1f)
                     )
 
                     SummaryCard(
                         title = "Programas activos",
-                        value = "—",
+                        value = when (uiState) {
+                            is PhysiotherapistHomeUiState.Success ->
+                                resumen?.programasActivos?.toString() ?: "0"
+
+                            PhysiotherapistHomeUiState.Loading,
+                            PhysiotherapistHomeUiState.Idle -> "..."
+
+                            is PhysiotherapistHomeUiState.Error -> "—"
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -188,11 +213,85 @@ fun PhysiotherapistHomeScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                Text(
-                    text = "No tienes sesiones programadas.",
-                    color = RehabSecondary,
-                    fontSize = 14.sp
-                )
+                Spacer(Modifier.height(14.dp))
+
+                when (uiState) {
+
+                    is PhysiotherapistHomeUiState.Success -> {
+
+                        val sesiones = resumen?.proximasSesiones.orEmpty()
+
+                        if (sesiones.isEmpty()) {
+                            Text(
+                                text = "No tienes sesiones programadas.",
+                                color = RehabSecondary,
+                                fontSize = 14.sp
+                            )
+                        } else {
+                            sesiones.forEachIndexed { index, sesion ->
+
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(
+                                            1.dp,
+                                            RehabBorder,
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .clickable {
+                                            onPatientClick(sesion.idPaciente)
+                                        }
+                                        .padding(14.dp)
+                                ) {
+                                    Text(
+                                        text = sesion.nombrePaciente,
+                                        color = RehabText,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+
+                                    Spacer(Modifier.height(5.dp))
+
+                                    Text(
+                                        text = sesion.nombrePrograma,
+                                        color = RehabSecondary,
+                                        fontSize = 13.sp
+                                    )
+
+                                    Spacer(Modifier.height(5.dp))
+
+                                    Text(
+                                        text = "${sesion.fecha} · ${sesion.hora}",
+                                        color = RehabBlue,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+
+                                if (index < sesiones.lastIndex) {
+                                    Spacer(Modifier.height(10.dp))
+                                }
+                            }
+                        }
+                    }
+
+                    PhysiotherapistHomeUiState.Loading,
+                    PhysiotherapistHomeUiState.Idle -> {
+                        Text(
+                            text = "Cargando sesiones...",
+                            color = RehabSecondary,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    is PhysiotherapistHomeUiState.Error -> {
+                        Text(
+                            text = "No se pudieron cargar las sesiones.",
+                            color = RehabSecondary,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
 
                 Spacer(Modifier.height(18.dp))
 
@@ -210,7 +309,19 @@ fun PhysiotherapistHomeScreen(
                     )
 
                     Text(
-                        text = "Sin registros",
+                        text = when (uiState) {
+                            is PhysiotherapistHomeUiState.Success ->
+                                if (resumen?.pacientesRevision.isNullOrEmpty()) {
+                                    "Sin registros"
+                                } else {
+                                    "${resumen?.pacientesRevision?.size} pacientes"
+                                }
+
+                            PhysiotherapistHomeUiState.Loading,
+                            PhysiotherapistHomeUiState.Idle -> "Cargando..."
+
+                            is PhysiotherapistHomeUiState.Error -> "No disponible"
+                        },
                         color = RehabSecondary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
@@ -219,11 +330,85 @@ fun PhysiotherapistHomeScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                Text(
-                    text = "No hay pacientes pendientes de revisión.",
-                    color = RehabSecondary,
-                    fontSize = 14.sp
-                )
+                when (uiState) {
+
+                    is PhysiotherapistHomeUiState.Success -> {
+
+                        val pacientes = resumen?.pacientesRevision.orEmpty()
+
+                        if (pacientes.isEmpty()) {
+                            Text(
+                                text = "No hay pacientes pendientes de revisión.",
+                                color = RehabSecondary,
+                                fontSize = 14.sp
+                            )
+                        } else {
+                            pacientes.forEach { paciente ->
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(
+                                            1.dp,
+                                            RehabBorder,
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .clickable {
+                                            onPatientClick(paciente.idPaciente)
+                                        }
+                                        .padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = paciente.nombrePaciente,
+                                            color = RehabText,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+
+                                        Spacer(Modifier.height(4.dp))
+
+                                        Text(
+                                            text = "Última sesión: ${paciente.fechaSesion}",
+                                            color = RehabSecondary,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+
+                                    Text(
+                                        text = "${paciente.nivelDolor}/10",
+                                        color = RehabOrange,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                Spacer(Modifier.height(8.dp))
+                            }
+                        }
+                    }
+
+                    PhysiotherapistHomeUiState.Loading,
+                    PhysiotherapistHomeUiState.Idle -> {
+                        Text(
+                            text = "Cargando pacientes...",
+                            color = RehabSecondary,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    is PhysiotherapistHomeUiState.Error -> {
+                        Text(
+                            text = "No se pudo cargar la información.",
+                            color = RehabSecondary,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
 
                 Spacer(Modifier.height(18.dp))
 
