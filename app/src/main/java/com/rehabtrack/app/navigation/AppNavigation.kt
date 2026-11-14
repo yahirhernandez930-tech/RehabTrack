@@ -40,6 +40,9 @@ import com.rehabtrack.app.ui.viewmodel.SessionExerciseData
 import com.rehabtrack.app.ui.viewmodel.SessionProgressViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionCompletionViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionDetailViewModel
+import com.rehabtrack.app.ui.viewmodel.ProfileViewModel
+import com.rehabtrack.app.ui.viewmodel.ChangeEmailViewModel
+import com.rehabtrack.app.ui.viewmodel.ChangePasswordViewModel
 
 @Composable
 fun AppNavigation() {
@@ -148,25 +151,91 @@ fun AppNavigation() {
         }
 
         composable("${Routes.Profile.route}/{idUsuario}") { backStackEntry ->
+            val idUsuario = backStackEntry.arguments?.getString("idUsuario")?.toIntOrNull()
+
+            if (idUsuario != null) {
+                val viewModel: ProfileViewModel = viewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
+                LaunchedEffect(idUsuario) {
+                    viewModel.cargarPerfil(idUsuario)
+                }
+
+                ProfileScreen(
+                    navController = navController,
+                    idUsuario = idUsuario,
+                    uiState = uiState,
+                    onLogout = {
+                        navController.navigate(Routes.Login.route) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = false
+                            }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+        }
+
+        composable(
+            route = "${Routes.ChangeEmail.route}/{idUsuario}"
+        ) { backStackEntry ->
 
             val idUsuario = backStackEntry.arguments
                 ?.getString("idUsuario")
                 ?.toIntOrNull()
 
             if (idUsuario != null) {
-                ProfileScreen(
+
+                val viewModel: ChangeEmailViewModel = viewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
+                LaunchedEffect(idUsuario) {
+                    viewModel.cargarCorreo(idUsuario)
+                }
+
+                ChangeEmailScreen(
                     navController = navController,
-                    idUsuario = idUsuario
+                    idUsuario = idUsuario,
+                    uiState = uiState,
+                    onChangeEmail = { nuevoCorreo ->
+                        viewModel.cambiarCorreo(
+                            idUsuario = idUsuario,
+                            nuevoCorreo = nuevoCorreo
+                        )
+                    }
                 )
             }
         }
 
-        composable(Routes.ChangeEmail.route) {
-            ChangeEmailScreen(navController)
-        }
+        composable(
+            route = "${Routes.ChangePassword.route}/{idUsuario}"
+        ) { backStackEntry ->
 
-        composable(Routes.ChangePassword.route) {
-            ChangePasswordScreen(navController)
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+
+                val viewModel: ChangePasswordViewModel = viewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
+                ChangePasswordScreen(
+                    navController = navController,
+                    idUsuario = idUsuario,
+                    uiState = uiState,
+                    onChangePassword = { passwordActual, nuevaPassword, confirmarPassword ->
+
+                        viewModel.cambiarPassword(
+                            idUsuario = idUsuario,
+                            passwordActual = passwordActual,
+                            nuevaPassword = nuevaPassword,
+                            confirmarPassword = confirmarPassword
+                        )
+                    }
+                )
+            }
         }
 
         composable(

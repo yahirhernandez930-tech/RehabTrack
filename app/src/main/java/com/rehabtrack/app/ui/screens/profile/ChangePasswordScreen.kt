@@ -18,6 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -39,14 +42,27 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.rehabtrack.app.ui.viewmodel.ChangePasswordUiState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.size
 
 @Composable
-fun ChangePasswordScreen(navController: NavController) {
+fun ChangePasswordScreen(
+    navController: NavController,
+    idUsuario: Int,
+    uiState: ChangePasswordUiState,
+    onChangePassword: (String, String, String) -> Unit
+) {
     val colors = MaterialTheme.colorScheme
 
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+
+    var mostrarPasswordActual by remember { mutableStateOf(false) }
+    var mostrarNuevaPassword by remember { mutableStateOf(false) }
+    var mostrarConfirmarPassword by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = colors.background,
@@ -109,7 +125,31 @@ fun ChangePasswordScreen(navController: NavController) {
                     placeholder = { Text("Contraseña actual") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (mostrarPasswordActual) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                mostrarPasswordActual = !mostrarPasswordActual
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (mostrarPasswordActual) {
+                                    Icons.Default.VisibilityOff
+                                } else {
+                                    Icons.Default.Visibility
+                                },
+                                contentDescription = if (mostrarPasswordActual) {
+                                    "Ocultar contraseña"
+                                } else {
+                                    "Mostrar contraseña"
+                                }
+                            )
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password
                     )
@@ -127,7 +167,31 @@ fun ChangePasswordScreen(navController: NavController) {
                     placeholder = { Text("Nueva contraseña") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (mostrarNuevaPassword) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                mostrarNuevaPassword = !mostrarNuevaPassword
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (mostrarNuevaPassword) {
+                                    Icons.Default.VisibilityOff
+                                } else {
+                                    Icons.Default.Visibility
+                                },
+                                contentDescription = if (mostrarNuevaPassword) {
+                                    "Ocultar contraseña"
+                                } else {
+                                    "Mostrar contraseña"
+                                }
+                            )
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password
                     )
@@ -168,11 +232,51 @@ fun ChangePasswordScreen(navController: NavController) {
                     placeholder = { Text("Confirmar contraseña") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (mostrarConfirmarPassword) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                mostrarConfirmarPassword = !mostrarConfirmarPassword
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (mostrarConfirmarPassword) {
+                                    Icons.Default.VisibilityOff
+                                } else {
+                                    Icons.Default.Visibility
+                                },
+                                contentDescription = if (mostrarConfirmarPassword) {
+                                    "Ocultar contraseña"
+                                } else {
+                                    "Mostrar contraseña"
+                                }
+                            )
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password
                     )
                 )
+
+                uiState.mensajeError?.let { mensaje ->
+                    Text(
+                        text = mensaje,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                uiState.mensajeExito?.let { mensaje ->
+                    Text(
+                        text = mensaje,
+                        color = Color(0xFF2E7D32),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(44.dp))
 
@@ -183,9 +287,13 @@ fun ChangePasswordScreen(navController: NavController) {
                 ) {
                     Button(
                         onClick = {
-                            // La validación y actualización real
-                            // se conectarán después.
+                            onChangePassword(
+                                currentPassword,
+                                newPassword,
+                                confirmPassword
+                            )
                         },
+                        enabled = !uiState.guardando,
                         modifier = Modifier
                             .fillMaxWidth(0.68f)
                             .height(44.dp),
@@ -194,7 +302,15 @@ fun ChangePasswordScreen(navController: NavController) {
                             containerColor = colors.primary
                         )
                     ) {
-                        Text("Guardar cambios")
+                        if (uiState.guardando) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Guardar cambios")
+                        }
                     }
                 }
 

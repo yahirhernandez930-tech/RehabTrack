@@ -26,17 +26,50 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.rehabtrack.app.navigation.Routes
 import com.rehabtrack.app.ui.components.PatientBottomBar
+import com.rehabtrack.app.ui.viewmodel.ProfileUiState
 
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    idUsuario: Int
+    idUsuario: Int,
+    uiState: ProfileUiState,
+    onLogout: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
+
+    if (uiState.cargando) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                color = colors.primary
+            )
+        }
+        return
+    }
+
+    if (uiState.mensajeError != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = uiState.mensajeError,
+                color = colors.error,
+                textAlign = TextAlign.Center
+            )
+        }
+        return
+    }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -94,23 +127,13 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 ProfileData(
-                    label = "Nombre",
-                    value = "Mario"
-                )
-
-                ProfileData(
-                    label = "Apellido Paterno",
-                    value = "López"
-                )
-
-                ProfileData(
-                    label = "Apellido Materno",
-                    value = "García"
+                    label = "Nombre completo",
+                    value = uiState.nombreCompleto
                 )
 
                 ProfileData(
                     label = "Correo electrónico",
-                    value = "mario@gmail.com"
+                    value = uiState.correo
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -118,7 +141,9 @@ fun ProfileScreen(
                 ProfileActionButton(
                     text = "Cambiar correo",
                     onClick = {
-                        navController.navigate(Routes.ChangeEmail.route)
+                        navController.navigate(
+                            "${Routes.ChangeEmail.route}/$idUsuario"
+                        )
                     }
                 )
 
@@ -127,7 +152,9 @@ fun ProfileScreen(
                 ProfileActionButton(
                     text = "Cambiar contraseña",
                     onClick = {
-                        navController.navigate(Routes.ChangePassword.route)
+                        navController.navigate(
+                            "${Routes.ChangePassword.route}/$idUsuario"
+                        )
                     }
                 )
 
@@ -136,9 +163,7 @@ fun ProfileScreen(
                 ProfileActionButton(
                     text = "Cerrar sesión",
                     backgroundColor = Color(0xFFD32F2F),
-                    onClick = {
-                        // Pendiente de implementar
-                    }
+                    onClick = onLogout
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -176,7 +201,6 @@ private fun ProfileData(
         )
     }
 }
-
 
 @Composable
 private fun ProfileActionButton(

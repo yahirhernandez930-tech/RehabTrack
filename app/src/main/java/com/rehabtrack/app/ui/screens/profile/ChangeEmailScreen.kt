@@ -38,9 +38,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.rehabtrack.app.ui.viewmodel.ChangeEmailUiState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.size
 
 @Composable
-fun ChangeEmailScreen(navController: NavController) {
+fun ChangeEmailScreen(
+    navController: NavController,
+    idUsuario: Int,
+    uiState: ChangeEmailUiState,
+    onChangeEmail: (String) -> Unit
+) {
     val colors = MaterialTheme.colorScheme
     var newEmail by remember { mutableStateOf("") }
 
@@ -107,7 +116,7 @@ fun ChangeEmailScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "mario@gmail.com",
+                    text = uiState.correoActual,
                     style = MaterialTheme.typography.titleMedium,
                     color = colors.onBackground,
                     fontWeight = FontWeight.SemiBold
@@ -127,12 +136,29 @@ fun ChangeEmailScreen(navController: NavController) {
                     )
                 )
 
+                uiState.mensajeError?.let { mensaje ->
+                    Text(
+                        text = mensaje,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                uiState.mensajeExito?.let { mensaje ->
+                    Text(
+                        text = mensaje,
+                        color = Color(0xFF2E7D32),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(38.dp))
 
                 Button(
                     onClick = {
-                        // La actualización real se conectará después.
+                        onChangeEmail(newEmail)
                     },
+                    enabled = !uiState.guardando,
                     modifier = Modifier
                         .fillMaxWidth(0.68f)
                         .height(44.dp),
@@ -141,7 +167,15 @@ fun ChangeEmailScreen(navController: NavController) {
                         containerColor = colors.primary
                     )
                 ) {
-                    Text("Guardar cambios")
+                    if (uiState.guardando) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Guardar cambios")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(40.dp))
