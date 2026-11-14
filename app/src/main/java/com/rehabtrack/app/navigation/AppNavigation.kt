@@ -45,6 +45,7 @@ import com.rehabtrack.app.ui.viewmodel.ChangeEmailViewModel
 import com.rehabtrack.app.ui.viewmodel.ChangePasswordViewModel
 import com.rehabtrack.app.ui.screens.physiotherapist.PhysiotherapistProfileScreen
 import com.rehabtrack.app.ui.viewmodel.PhysiotherapistProfileViewModel
+import com.rehabtrack.app.ui.viewmodel.ProgressViewModel
 
 @Composable
 fun AppNavigation() {
@@ -91,9 +92,18 @@ fun AppNavigation() {
                 ?.toIntOrNull()
 
             if (idUsuario != null) {
+
+                val viewModel: ProgressViewModel = viewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
+                LaunchedEffect(idUsuario) {
+                    viewModel.cargarProgreso(idUsuario)
+                }
+
                 ProgressScreen(
                     navController = navController,
-                    idUsuario = idUsuario
+                    idUsuario = idUsuario,
+                    uiState = uiState
                 )
             }
         }

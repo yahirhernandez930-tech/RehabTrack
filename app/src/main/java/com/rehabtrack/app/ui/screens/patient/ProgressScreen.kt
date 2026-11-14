@@ -33,13 +33,15 @@ import com.rehabtrack.app.ui.components.PatientBottomBar
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-
-private val PainValues = listOf(5.5f, 4.8f, 3.5f, 2.6f)
+import com.rehabtrack.app.ui.viewmodel.ProgressUiState
+import androidx.compose.material3.CircularProgressIndicator
+import com.rehabtrack.app.ui.viewmodel.PainProgressPoint
 
 @Composable
 fun ProgressScreen(
     navController: NavController,
-    idUsuario: Int
+    idUsuario: Int,
+    uiState: ProgressUiState
 ) {
     val colors = MaterialTheme.colorScheme
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -98,119 +100,167 @@ fun ProgressScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = "Resumen del programa",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(26.dp))
-
-                Text(
-                    text = "Programa completado",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Text(
-                    text = "58%",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                // Barra de progreso
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .background(
-                            colors.outlineVariant,
-                            RoundedCornerShape(4.dp)
+                when {
+                    uiState.cargando -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .padding(40.dp)
                         )
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.58f)
-                            .height(4.dp)
-                            .background(
-                                colors.primary,
-                                RoundedCornerShape(4.dp)
+                    }
+
+                    uiState.mensajeError != null -> {
+                        Text(
+                            text = uiState.mensajeError,
+                            color = colors.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(vertical = 24.dp)
+                        )
+                    }
+
+                    uiState.nombrePrograma.isBlank() -> {
+                        Text(
+                            text = "No tienes un programa de rehabilitación activo.",
+                            color = colors.onBackground,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(vertical = 24.dp)
+                        )
+                    }
+
+                    else -> {
+                        Text(
+                            text = "Resumen del programa",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = uiState.nombrePrograma,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onBackground
+                        )
+
+                        Spacer(modifier = Modifier.height(26.dp))
+
+                        Text(
+                            text = "Programa completado",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "${uiState.porcentajeCompletado}%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onBackground,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(28.dp))
+
+                        // Barra de progreso dinámica
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .background(
+                                    colors.outlineVariant,
+                                    RoundedCornerShape(4.dp)
+                                )
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(
+                                        uiState.porcentajeCompletado / 100f
+                                    )
+                                    .height(4.dp)
+                                    .background(
+                                        colors.primary,
+                                        RoundedCornerShape(4.dp)
+                                    )
                             )
-                    )
-                }
+                        }
 
-                Spacer(modifier = Modifier.height(36.dp))
+                        Spacer(modifier = Modifier.height(36.dp))
 
-                // Estadísticas
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
+                        // Estadísticas
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "${uiState.sesionesCompletadas} / ${uiState.totalSesiones}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = colors.onBackground,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Text(
+                                    text = "Sesiones\ncompletadas",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colors.onBackground,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = uiState.ejerciciosCompletados.toString(),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = colors.onBackground,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Text(
+                                    text = "Ejercicios completados",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colors.onBackground,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(34.dp))
+
                         Text(
-                            text = "7 / 12",
+                            text = "Evolución del dolor",
                             style = MaterialTheme.typography.titleLarge,
                             color = colors.onBackground,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.SemiBold
                         )
 
-                        Text(
-                            text = "Sesiones\ncompletadas",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onBackground,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                        if (uiState.evolucionDolor.isEmpty()) {
+                            Text(
+                                text = "Todavía no hay registros de dolor.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colors.onBackground
+                            )
+                        } else {
+                            PainProgressChart(
+                                values = uiState.evolucionDolor,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(155.dp)
+                            )
+                        }
 
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "20",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = colors.onBackground,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            text = "Ejercicios completados",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onBackground,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
-
-                Spacer(modifier = Modifier.height(34.dp))
-
-                Text(
-                    text = "Evolución del dolor",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = colors.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                PainProgressChart(
-                    values = PainValues,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(155.dp)
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
             }
         }
     }
@@ -218,7 +268,7 @@ fun ProgressScreen(
 
 @Composable
 private fun PainProgressChart(
-    values: List<Float>,
+    values: List<PainProgressPoint>,
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
@@ -236,7 +286,7 @@ private fun PainProgressChart(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.End
             ) {
-                listOf("10", "8", "6", "4", "2").forEach { label ->
+                listOf("10", "8", "6", "4", "2", "0").forEach { label ->
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelSmall,
@@ -276,8 +326,8 @@ private fun PainProgressChart(
                 )
 
                 // Marcas del eje vertical
-                for (i in 0..4) {
-                    val y = top + (bottom - top) * i / 4f
+                for (i in 0..5) {
+                    val y = top + (bottom - top) * i / 5f
 
                     drawLine(
                         color = axisColor,
@@ -287,14 +337,22 @@ private fun PainProgressChart(
                     )
                 }
 
-                // Puntos y líneas de las cuatro semanas
-                val points = values.mapIndexed { index, value ->
-                    val x = left + (right - left) * index / 3f
-                    val y = bottom - ((value - 2f)/ 8f) * (bottom - top)
+                // Posiciones de los registros
+                val points = values.mapIndexed { index, point ->
+                    val x = if (values.size == 1) {
+                        (left + right) / 2f
+                    } else {
+                        left + (right - left) * index /
+                                (values.size - 1).toFloat()
+                    }
+
+                    val y = bottom -
+                            (point.nivelDolor / 10f) * (bottom - top)
 
                     Offset(x, y)
                 }
 
+                // Líneas entre registros
                 for (i in 0 until points.lastIndex) {
                     drawLine(
                         color = lineColor,
@@ -305,6 +363,7 @@ private fun PainProgressChart(
                     )
                 }
 
+                // Puntos
                 points.forEach { point ->
                     drawCircle(
                         color = lineColor,
@@ -321,14 +380,9 @@ private fun PainProgressChart(
                 .padding(start = 32.dp, top = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            listOf(
-                "Semana 1",
-                "Semana 2",
-                "Semana 3",
-                "Semana 4"
-            ).forEach { week ->
+            values.forEach { point ->
                 Text(
-                    text = week,
+                    text = point.etiqueta,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onBackground,
                     maxLines = 1
