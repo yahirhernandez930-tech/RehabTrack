@@ -47,11 +47,24 @@ import com.rehabtrack.app.ui.screens.physiotherapist.PhysiotherapistProfileScree
 import com.rehabtrack.app.ui.viewmodel.PhysiotherapistProfileViewModel
 import com.rehabtrack.app.ui.viewmodel.ProgressViewModel
 import com.rehabtrack.app.ui.viewmodel.EvidenciaViewModel
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.Text
+import com.rehabtrack.app.data.preferences.SessionManager
+import kotlinx.coroutines.flow.first
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavigation() {
 
     val navController = rememberNavController()
+    val context = LocalContext.current
+
+    val sessionManager = remember {
+        SessionManager(context)
+    }
+
+    val coroutineScope = rememberCoroutineScope()
 
     var ejerciciosSesion by remember {
         mutableStateOf<List<SessionExerciseData>>(emptyList())
@@ -59,8 +72,35 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.Login.route
+        startDestination = "session_check"
     ) {
+
+        composable("session_check") {
+
+            LaunchedEffect(Unit) {
+
+                val session = sessionManager.sessionFlow.first()
+
+                val destino = when (session?.rol) {
+                    "PACIENTE" ->
+                        "${Routes.Home.route}/${session.idUsuario}"
+
+                    "FISIOTERAPEUTA" ->
+                        "${Routes.PhysiotherapistHome.route}/${session.idUsuario}"
+
+                    else -> Routes.Login.route
+                }
+
+                navController.navigate(destino) {
+                    popUpTo("session_check") {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            }
+
+            Text(text = "Verificando sesión...")
+        }
 
         composable(Routes.Login.route) {
             LoginScreen(navController)
@@ -179,11 +219,15 @@ fun AppNavigation() {
                     idUsuario = idUsuario,
                     uiState = uiState,
                     onLogout = {
-                        navController.navigate(Routes.Login.route) {
-                            popUpTo(navController.graph.id) {
-                                inclusive = false
+                        coroutineScope.launch {
+                            sessionManager.cerrarSesion()
+
+                            navController.navigate(Routes.Login.route) {
+                                popUpTo(navController.graph.id) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
                             }
-                            launchSingleTop = true
                         }
                     }
                 )
@@ -622,11 +666,15 @@ fun AppNavigation() {
                         }
                     },
                     onLogout = {
-                        navController.navigate(Routes.Login.route) {
-                            popUpTo(navController.graph.id) {
-                                inclusive = false
+                        coroutineScope.launch {
+                            sessionManager.cerrarSesion()
+
+                            navController.navigate(Routes.Login.route) {
+                                popUpTo(navController.graph.id) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
                             }
-                            launchSingleTop = true
                         }
                     }
                 )

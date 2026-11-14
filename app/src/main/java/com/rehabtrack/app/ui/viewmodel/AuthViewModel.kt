@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
+import com.rehabtrack.app.data.preferences.SessionManager
 
 sealed interface AuthState {
     data object Idle : AuthState
@@ -38,6 +39,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val authRepository = provider.authRepository
     private val usuarioRepository = provider.usuarioRepository
     private val fisioterapeutaRepository = provider.fisioterapeutaRepository
+    private val sessionManager = SessionManager(application)
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
@@ -348,6 +350,14 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                         "El usuario tiene un rol no reconocido"
                     )
                     return@launch
+                }
+
+                // Guardar la sesión después de verificar las credenciales.
+                withContext(Dispatchers.IO) {
+                    sessionManager.guardarSesion(
+                        idUsuario = usuario.idUsuario,
+                        rol = usuario.rol
+                    )
                 }
 
                 _authState.value = AuthState.LoginExitoso(

@@ -61,4 +61,7 @@ dependencies {
     // Room - Base de datos local SQLite
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
+
+    // DataStore - Persistencia de sesión
+    implementation(libs.androidx.datastore.preferences)
 }
