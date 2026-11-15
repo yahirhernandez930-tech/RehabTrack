@@ -42,6 +42,21 @@ import androidx.navigation.NavController
 import com.rehabtrack.app.navigation.Routes
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.platform.LocalContext
+
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
+import android.net.Uri
+import android.content.Intent
 
 @Composable
 fun ExerciseInfoScreen(
@@ -52,7 +67,8 @@ fun ExerciseInfoScreen(
     series: Int,
     repeticiones: Int,
     idSesion: Int,
-    indiceEjercicio: Int
+    indiceEjercicio: Int,
+    videoUrl: String? = null
 ) {
     val colors = MaterialTheme.colorScheme
 
@@ -123,52 +139,8 @@ fun ExerciseInfoScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Espacio para el video demostrativo
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFEAF3FC)),
-                    contentAlignment = Alignment.Center
-                ) {
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-
-                        Surface(
-                            modifier = Modifier.size(56.dp),
-                            shape = CircleShape,
-                            color = colors.primary
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                tint = colors.onPrimary,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = "Video demostrativo",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = colors.onSurfaceVariant,
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = "Disponible próximamente",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onSurfaceVariant
-                        )
-                    }
-                }
+                // Video demostrativo
+                VideoDemostrativo(videoUrl = videoUrl)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -284,6 +256,249 @@ fun ExerciseInfoScreen(
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun VideoDemostrativo(videoUrl: String?) {
+
+    val colors = MaterialTheme.colorScheme
+
+    if (videoUrl.isNullOrBlank()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFFEAF3FC)),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Surface(
+                    modifier = Modifier.size(56.dp),
+                    shape = CircleShape,
+                    color = colors.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = colors.onPrimary,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Video demostrativo",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = colors.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Video no disponible",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant
+                )
+            }
+        }
+        return
+    }
+
+    val uri = Uri.parse(videoUrl.trim())
+    val host = uri.host.orEmpty().lowercase()
+
+    val youtubeId = when {
+        host == "youtu.be" ->
+            uri.lastPathSegment
+
+        host.contains("youtube.com") ->
+            uri.getQueryParameter("v")
+                ?: uri.pathSegments
+                    .takeIf {
+                        it.size >= 2 &&
+                                it[0] in listOf("embed", "shorts", "live")
+                    }
+                    ?.get(1)
+
+        else -> null
+    }
+
+    val vimeoId = if (
+        host.contains("vimeo.com")
+    ) {
+        uri.pathSegments.lastOrNull {
+            it.all(Char::isDigit)
+        }
+    } else {
+        null
+    }
+
+
+    // YouTube y Vimeo se reproducen externamente.
+    if (!youtubeId.isNullOrBlank() || !vimeoId.isNullOrBlank()) {
+
+        val context = LocalContext.current
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFFEAF3FC)),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Surface(
+                    modifier = Modifier.size(56.dp),
+                    shape = CircleShape,
+                    color = colors.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = colors.onPrimary,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Video demostrativo",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "Este video se abrirá en YouTube o en tu navegador.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+
+                Button(
+                    onClick = {
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse(videoUrl.trim())
+                        )
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .height(48.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 16.dp,
+                        vertical = 0.dp
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colors.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "Abrir video",
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        return
+    }
+
+    // MP4 y HLS continúan utilizando ExoPlayer.
+    val context = LocalContext.current.applicationContext
+
+    var playbackError by remember(videoUrl) {
+        mutableStateOf(false)
+    }
+
+    val exoPlayer = remember(context, videoUrl) {
+        ExoPlayer.Builder(context)
+            .build()
+            .apply {
+                setMediaItem(MediaItem.fromUri(videoUrl))
+                prepare()
+            }
+    }
+
+    DisposableEffect(exoPlayer) {
+        val listener = object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                playbackError = true
+            }
+        }
+
+        exoPlayer.addListener(listener)
+
+        onDispose {
+            exoPlayer.removeListener(listener)
+            exoPlayer.release()
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.Black)
+    ) {
+        AndroidView(
+            factory = { viewContext ->
+                PlayerView(viewContext).apply {
+                    player = exoPlayer
+                    useController = true
+                }
+            },
+            update = { playerView ->
+                playerView.player = exoPlayer
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        if (playbackError) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xDD000000)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No se pudo reproducir el video. Verifica tu conexión o el enlace.",
+                    modifier = Modifier.padding(16.dp),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }

@@ -16,7 +16,8 @@ data class SessionExerciseData(
     val descripcion: String,
     val instrucciones: String,
     val series: Int,
-    val repeticiones: Int
+    val repeticiones: Int,
+    val videoUrl: String?
 )
 
 sealed interface SessionExercisesUiState {
@@ -84,7 +85,8 @@ class SessionExercisesViewModel(
                                 descripcion = it.descripcion,
                                 instrucciones = it.instrucciones,
                                 series = asignacion.series,
-                                repeticiones = asignacion.repeticiones
+                                repeticiones = asignacion.repeticiones,
+                                videoUrl = it.videoUrl
                             )
                         }
                     }

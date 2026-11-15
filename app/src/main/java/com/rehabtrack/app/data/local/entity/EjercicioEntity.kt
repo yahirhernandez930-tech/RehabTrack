@@ -9,5 +9,6 @@ data class EjercicioEntity(
     val idEjercicio: Int = 0,
     val nombre: String,
     val descripcion: String,
-    val instrucciones: String
+    val instrucciones: String,
+    val videoUrl: String? = null
 )

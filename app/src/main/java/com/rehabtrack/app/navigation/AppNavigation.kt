@@ -5,9 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import com.rehabtrack.app.ui.screens.auth.LoginScreen
 import com.rehabtrack.app.ui.screens.auth.RegisterScreen
 import com.rehabtrack.app.ui.screens.patient.HomeScreen
@@ -36,7 +34,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rehabtrack.app.ui.viewmodel.NextSessionViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionExercisesViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionExercisesUiState
-import com.rehabtrack.app.ui.viewmodel.SessionExerciseData
 import com.rehabtrack.app.ui.viewmodel.SessionProgressViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionCompletionViewModel
 import com.rehabtrack.app.ui.viewmodel.SessionDetailViewModel
@@ -53,6 +50,8 @@ import com.rehabtrack.app.data.preferences.SessionManager
 import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import com.rehabtrack.app.ui.screens.physiotherapist.ManageExerciseVideosScreen
+import com.rehabtrack.app.ui.viewmodel.NavigationViewModel
 
 @Composable
 fun AppNavigation() {
@@ -66,9 +65,7 @@ fun AppNavigation() {
 
     val coroutineScope = rememberCoroutineScope()
 
-    var ejerciciosSesion by remember {
-        mutableStateOf<List<SessionExerciseData>>(emptyList())
-    }
+    val navigationViewModel: NavigationViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -367,7 +364,7 @@ fun AppNavigation() {
                             uiState as? SessionExercisesUiState.Success
 
                         if (resultado != null) {
-                            ejerciciosSesion = resultado.ejercicios
+                            navigationViewModel.guardarEjercicios(resultado.ejercicios)
 
                             navController.navigate(
                                 "${Routes.ExerciseInfo.route}/$idSesion/0"
@@ -391,7 +388,7 @@ fun AppNavigation() {
                 ?.toIntOrNull()
 
             if (idSesion != null && indiceEjercicio != null) {
-                val ejercicio = ejerciciosSesion.getOrNull(indiceEjercicio)
+                val ejercicio = navigationViewModel.obtenerEjercicio(indiceEjercicio)
 
                 if (ejercicio != null) {
                     ExerciseInfoScreen(
@@ -402,7 +399,8 @@ fun AppNavigation() {
                         series = ejercicio.series,
                         repeticiones = ejercicio.repeticiones,
                         idSesion = idSesion,
-                        indiceEjercicio = indiceEjercicio
+                        indiceEjercicio = indiceEjercicio,
+                        videoUrl = ejercicio.videoUrl
                     )
                 }
             }
@@ -421,7 +419,7 @@ fun AppNavigation() {
                 ?.toIntOrNull()
 
             if (idSesion != null && indiceEjercicio != null) {
-                val ejercicio = ejerciciosSesion.getOrNull(indiceEjercicio)
+                val ejercicio = navigationViewModel.obtenerEjercicio(indiceEjercicio)
 
                 if (ejercicio != null) {
                     val progressViewModel: SessionProgressViewModel = viewModel()
@@ -494,7 +492,7 @@ fun AppNavigation() {
                 ExerciseConfirmationScreen(
                     navController = navController,
                     onContinue = {
-                        if (indiceEjercicio < ejerciciosSesion.lastIndex) {
+                        if (indiceEjercicio < navigationViewModel.ejerciciosSesion.lastIndex) {
                             val siguienteIndice = indiceEjercicio + 1
 
                             navController.navigate(
@@ -675,6 +673,28 @@ fun AppNavigation() {
                                 }
                                 launchSingleTop = true
                             }
+                        }
+                    }
+                )
+            }
+        }
+
+        composable(
+            route = "${Routes.ManageExerciseVideos.route}/{idUsuario}"
+        ) { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                ManageExerciseVideosScreen(
+                    idUsuario = idUsuario,
+                    onProfileClick = {
+                        navController.navigate(
+                            "${Routes.PhysiotherapistProfile.route}/$idUsuario"
+                        ) {
+                            launchSingleTop = true
                         }
                     }
                 )

@@ -64,4 +64,8 @@ dependencies {
 
     // DataStore - Persistencia de sesión
     implementation(libs.androidx.datastore.preferences)
+
+    // Media3 - Reproducción de videos demostrativos
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 }

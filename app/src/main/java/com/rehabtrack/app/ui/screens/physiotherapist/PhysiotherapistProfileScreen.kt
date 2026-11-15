@@ -168,6 +168,17 @@ fun PhysiotherapistProfileScreen(
                     }
                 )
 
+                Spacer(modifier = Modifier.height(24.dp))
+
+                ProfileActionButton(
+                    text = "Administrar videos",
+                    onClick = {
+                        navController.navigate(
+                            "${Routes.ManageExerciseVideos.route}/$idUsuario"
+                        )
+                    }
+                )
+
                 Spacer(modifier = Modifier.height(48.dp))
 
                 ProfileActionButton(

@@ -241,32 +241,50 @@ class ManageProgramViewModel(application: Application) :
                                 programaRepository.insertar(programa).toInt()
                         }
 
+
                         // Recuperar el catálogo de ejercicios.
-                        val catalogoEjercicios =
-                            ejercicioRepository.obtenerTodos()
+                        val catalogoEjercicios = ejercicioRepository.obtenerTodos()
 
                         ejercicios.forEach { ejercicio ->
 
-                            val existente =
-                                catalogoEjercicios.firstOrNull {
-                                    it.nombre.equals(
-                                        ejercicio.nombre.trim(),
-                                        ignoreCase = true
+                            val esEjercicioPrueba = ejercicio.nombre.trim()
+                                .equals("Deslizamiento de talón", ignoreCase = true)
+
+                            val videoUrlPrueba = if (esEjercicioPrueba) {
+                                "https://storage.googleapis.com/exoplayer-test-media-0/BigBuckBunny_320x180.mp4"
+                            } else {
+                                null
+                            }
+
+                            val existente = catalogoEjercicios.firstOrNull {
+                                it.nombre.equals(
+                                    ejercicio.nombre.trim(),
+                                    ignoreCase = true
+                                )
+                            }
+
+                            val idEjercicio = if (existente != null) {
+
+                                // Actualizar únicamente la URL del ejercicio de prueba.
+                                if (esEjercicioPrueba) {
+                                    ejercicioRepository.actualizar(
+                                        existente.copy(videoUrl = videoUrlPrueba)
                                     )
                                 }
 
-                            val idEjercicio =
-                                if (existente != null) {
-                                    existente.idEjercicio
-                                } else {
-                                    ejercicioRepository.insertar(
-                                        EjercicioEntity(
-                                            nombre = ejercicio.nombre.trim(),
-                                            descripcion = "",
-                                            instrucciones = ""
-                                        )
-                                    ).toInt()
-                                }
+                                existente.idEjercicio
+
+                            } else {
+
+                                ejercicioRepository.insertar(
+                                    EjercicioEntity(
+                                        nombre = ejercicio.nombre.trim(),
+                                        descripcion = "",
+                                        instrucciones = "",
+                                        videoUrl = videoUrlPrueba
+                                    )
+                                ).toInt()
+                            }
 
                             // Registrar la relación con el programa.
                             programaEjercicioRepository.insertar(
