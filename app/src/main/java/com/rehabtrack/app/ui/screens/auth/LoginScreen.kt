@@ -59,6 +59,9 @@ fun LoginScreen(
                 "FISIOTERAPEUTA" ->
                     "${Routes.PhysiotherapistHome.route}/${resultado.idUsuario}"
 
+                "ADMINISTRADOR" ->
+                    "${Routes.AdminHome.route}/${resultado.idUsuario}"
+
                 else -> null
             }
 

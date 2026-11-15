@@ -52,6 +52,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.rehabtrack.app.ui.screens.physiotherapist.ManageExerciseVideosScreen
 import com.rehabtrack.app.ui.viewmodel.NavigationViewModel
+import com.rehabtrack.app.ui.screens.admin.AdminHomeScreen
+import com.rehabtrack.app.ui.screens.admin.RegisterPhysiotherapistScreen
+import com.rehabtrack.app.ui.screens.admin.AdminSetupScreen
+import com.rehabtrack.app.ui.viewmodel.AuthViewModel
 
 @Composable
 fun AppNavigation() {
@@ -74,18 +78,37 @@ fun AppNavigation() {
 
         composable("session_check") {
 
+            val authViewModel: AuthViewModel = viewModel()
+
             LaunchedEffect(Unit) {
 
                 val session = sessionManager.sessionFlow.first()
 
-                val destino = when (session?.rol) {
-                    "PACIENTE" ->
-                        "${Routes.Home.route}/${session.idUsuario}"
+                val destino = if (session != null) {
 
-                    "FISIOTERAPEUTA" ->
-                        "${Routes.PhysiotherapistHome.route}/${session.idUsuario}"
+                    when (session.rol) {
+                        "PACIENTE" ->
+                            "${Routes.Home.route}/${session.idUsuario}"
 
-                    else -> Routes.Login.route
+                        "FISIOTERAPEUTA" ->
+                            "${Routes.PhysiotherapistHome.route}/${session.idUsuario}"
+
+                        "ADMINISTRADOR" ->
+                            "${Routes.AdminHome.route}/${session.idUsuario}"
+
+                        else -> Routes.Login.route
+                    }
+
+                } else {
+
+                    val existeAdministrador =
+                        authViewModel.existeAdministrador()
+
+                    if (existeAdministrador) {
+                        Routes.Login.route
+                    } else {
+                        Routes.AdminSetup.route
+                    }
                 }
 
                 navController.navigate(destino) {
@@ -96,7 +119,22 @@ fun AppNavigation() {
                 }
             }
 
-            Text(text = "Verificando sesión...")
+            Text(text = "Verificando configuración...")
+        }
+
+        composable(Routes.AdminSetup.route) {
+
+            AdminSetupScreen(
+                onSetupSuccess = {
+
+                    navController.navigate(Routes.Login.route) {
+                        popUpTo(Routes.AdminSetup.route) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
         composable(Routes.Login.route) {
@@ -576,6 +614,59 @@ fun AppNavigation() {
                         navController.navigate("${Routes.PhysiotherapistProfile.route}/$idUsuario") {
                             launchSingleTop = true
                         }
+                    }
+                )
+            }
+        }
+
+        composable("${Routes.AdminHome.route}/{idUsuario}") { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                AdminHomeScreen(
+                    idUsuario = idUsuario,
+
+                    onRegisterPhysiotherapistClick = {
+                        navController.navigate(
+                            "${Routes.RegisterPhysiotherapist.route}/$idUsuario"
+                        )
+                    },
+
+                    onLogout = {
+                        coroutineScope.launch {
+                            sessionManager.cerrarSesion()
+
+                            navController.navigate(Routes.Login.route) {
+                                popUpTo(navController.graph.id) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
+        composable(
+            route = "${Routes.RegisterPhysiotherapist.route}/{idUsuario}"
+        ) { backStackEntry ->
+
+            val idUsuario = backStackEntry.arguments
+                ?.getString("idUsuario")
+                ?.toIntOrNull()
+
+            if (idUsuario != null) {
+                RegisterPhysiotherapistScreen(
+                    onBack = {
+                        navController.popBackStack()
+                    },
+
+                    onRegistrationSuccess = {
+                        navController.popBackStack()
                     }
                 )
             }

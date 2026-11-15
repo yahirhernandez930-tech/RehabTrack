@@ -21,6 +21,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 import com.rehabtrack.app.data.preferences.SessionManager
+import kotlinx.coroutines.flow.first
 
 sealed interface AuthState {
     data object Idle : AuthState
@@ -304,6 +305,215 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+
+    fun registrarFisioterapeuta(
+        nombreCompleto: String,
+        especialidad: String,
+        telefono: String,
+        correo: String,
+        password: String
+    ) {
+        if (_authState.value == AuthState.Loading) return
+
+        val nombre = nombreCompleto.trim()
+        val especialidadNormalizada = especialidad.trim()
+        val telefonoNormalizado = telefono.trim()
+        val correoNormalizado = correo.trim().lowercase()
+
+        if (nombre.isBlank() || especialidadNormalizada.isBlank()) {
+            _authState.value = AuthState.Error(
+                "Completa el nombre y la especialidad"
+            )
+            return
+        }
+
+        if (!Patterns.EMAIL_ADDRESS.matcher(correoNormalizado).matches()) {
+            _authState.value = AuthState.Error(
+                "El correo electrónico no es válido"
+            )
+            return
+        }
+
+        if (telefonoNormalizado.isNotBlank() &&
+            !telefonoNormalizado.matches(Regex("""\d{10}"""))
+        ) {
+            _authState.value = AuthState.Error(
+                "El teléfono debe contener 10 dígitos"
+            )
+            return
+        }
+
+        val passwordValida =
+            password.length in 8..12 &&
+                    password.any { it.isUpperCase() } &&
+                    password.any { it.isLowerCase() } &&
+                    password.any { it.isDigit() } &&
+                    password.any { !it.isLetterOrDigit() }
+
+        if (!passwordValida) {
+            _authState.value = AuthState.Error(
+                "Usa 8–12 caracteres, mayúscula, minúscula, número y símbolo"
+            )
+            return
+        }
+
+        _authState.value = AuthState.Loading
+
+        viewModelScope.launch {
+            try {
+                val sesion = withContext(Dispatchers.IO) {
+                    sessionManager.sessionFlow.first()
+                }
+
+                if (sesion?.rol != "ADMINISTRADOR") {
+                    _authState.value = AuthState.Error(
+                        "No tienes permisos para registrar fisioterapeutas"
+                    )
+                    return@launch
+                }
+
+                val correoExiste = withContext(Dispatchers.IO) {
+                    usuarioRepository.obtenerUsuarioPorCorreo(correoNormalizado)
+                }
+
+                if (correoExiste != null) {
+                    _authState.value = AuthState.Error(
+                        "Este correo electrónico ya está registrado"
+                    )
+                    return@launch
+                }
+
+                val passwordHash = withContext(Dispatchers.Default) {
+                    PasswordUtils.hashPassword(password)
+                }
+
+                val usuario = UsuarioEntity(
+                    correo = correoNormalizado,
+                    passwordHash = passwordHash,
+                    rol = "FISIOTERAPEUTA"
+                )
+
+                val fisioterapeuta = FisioterapeutaEntity(
+                    idUsuario = 0,
+                    nombreCompleto = nombre,
+                    especialidad = especialidadNormalizada,
+                    telefono = telefonoNormalizado.ifBlank { null }
+                )
+
+                withContext(Dispatchers.IO) {
+                    authRepository.registrarFisioterapeuta(
+                        usuario,
+                        fisioterapeuta
+                    )
+                }
+
+                _authState.value = AuthState.RegistroExitoso
+
+            } catch (e: SQLiteConstraintException) {
+                _authState.value = AuthState.Error(
+                    "Este correo electrónico ya está registrado"
+                )
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(
+                    "No se pudo registrar el fisioterapeuta"
+                )
+            }
+        }
+    }
+
+    suspend fun existeAdministrador(): Boolean {
+        return withContext(Dispatchers.IO) {
+            usuarioRepository.contarAdministradores() > 0
+        }
+    }
+
+    fun inicializarAdministrador(
+        correo: String,
+        password: String
+    ) {
+        if (_authState.value == AuthState.Loading) return
+
+        val correoNormalizado = correo.trim().lowercase()
+
+        if (!Patterns.EMAIL_ADDRESS.matcher(correoNormalizado).matches()) {
+            _authState.value = AuthState.Error(
+                "El correo electrónico no es válido"
+            )
+            return
+        }
+
+        val passwordValida =
+            password.length in 8..12 &&
+                    password.any { it.isUpperCase() } &&
+                    password.any { it.isLowerCase() } &&
+                    password.any { it.isDigit() } &&
+                    password.any { !it.isLetterOrDigit() }
+
+        if (!passwordValida) {
+            _authState.value = AuthState.Error(
+                "Usa 8–12 caracteres, mayúscula, minúscula, número y símbolo"
+            )
+            return
+        }
+
+        _authState.value = AuthState.Loading
+
+        viewModelScope.launch {
+            try {
+                val passwordHash = withContext(Dispatchers.Default) {
+                    PasswordUtils.hashPassword(password)
+                }
+
+                val usuario = UsuarioEntity(
+                    correo = correoNormalizado,
+                    passwordHash = passwordHash,
+                    rol = "ADMINISTRADOR"
+                )
+
+                withContext(Dispatchers.IO) {
+                    provider.ejecutarTransaccion {
+                        val administradores =
+                            usuarioRepository.contarAdministradores()
+
+                        if (administradores > 0) {
+                            throw IllegalStateException(
+                                "La cuenta administrativa ya fue configurada"
+                            )
+                        }
+
+                        val correoExiste =
+                            usuarioRepository.obtenerUsuarioPorCorreo(
+                                correoNormalizado
+                            )
+
+                        if (correoExiste != null) {
+                            throw IllegalArgumentException(
+                                "Este correo electrónico ya está registrado"
+                            )
+                        }
+
+                        usuarioRepository.registrarUsuario(usuario)
+                    }
+                }
+
+                _authState.value = AuthState.RegistroExitoso
+
+            } catch (e: IllegalArgumentException) {
+                _authState.value = AuthState.Error(
+                    e.message ?: "No se pudo registrar el administrador"
+                )
+            } catch (e: IllegalStateException) {
+                _authState.value = AuthState.Error(
+                    e.message ?: "La cuenta administrativa ya existe"
+                )
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(
+                    "No se pudo completar la configuración administrativa"
+                )
+            }
+        }
+    }
+
     fun iniciarSesion(correo: String, password: String) {
         if (_authState.value == AuthState.Loading) return
 
@@ -345,7 +555,12 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
 
-                if (usuario.rol !in listOf("PACIENTE", "FISIOTERAPEUTA")) {
+                if (usuario.rol !in listOf(
+                        "PACIENTE",
+                        "FISIOTERAPEUTA",
+                        "ADMINISTRADOR"
+                    )
+                ) {
                     _authState.value = AuthState.Error(
                         "El usuario tiene un rol no reconocido"
                     )

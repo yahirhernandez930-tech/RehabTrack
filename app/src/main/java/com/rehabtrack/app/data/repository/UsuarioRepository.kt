@@ -30,4 +30,8 @@ class UsuarioRepository(
     ) {
         usuarioDao.actualizar(usuario)
     }
+
+    suspend fun contarAdministradores(): Int {
+        return usuarioDao.contarAdministradores()
+    }
 }
