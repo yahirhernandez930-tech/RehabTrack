@@ -46,6 +46,9 @@ import com.rehabtrack.app.ui.viewmodel.ChangePasswordUiState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @Composable
 fun ChangePasswordScreen(
@@ -63,6 +66,25 @@ fun ChangePasswordScreen(
     var mostrarPasswordActual by remember { mutableStateOf(false) }
     var mostrarNuevaPassword by remember { mutableStateOf(false) }
     var mostrarConfirmarPassword by remember { mutableStateOf(false) }
+
+    var currentPasswordError by remember { mutableStateOf<String?>(null) }
+    var newPasswordError by remember { mutableStateOf<String?>(null) }
+    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
+
+    val passwordLongitudValida = newPassword.length in 8..12
+    val passwordTieneMayuscula = newPassword.any { it.isUpperCase() }
+    val passwordTieneMinuscula = newPassword.any { it.isLowerCase() }
+    val passwordTieneNumero = newPassword.any { it.isDigit() }
+    val passwordTieneSimbolo = newPassword.any {
+        !it.isLetterOrDigit() && !it.isWhitespace()
+    }
+
+    val passwordValida =
+        passwordLongitudValida &&
+                passwordTieneMayuscula &&
+                passwordTieneMinuscula &&
+                passwordTieneNumero &&
+                passwordTieneSimbolo
 
     Scaffold(
         containerColor = colors.background,
@@ -110,7 +132,10 @@ fun ChangePasswordScreen(
 
             Column(
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxWidth()
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 28.dp)
             ) {
                 Spacer(modifier = Modifier.height(56.dp))
@@ -118,13 +143,19 @@ fun ChangePasswordScreen(
                 // Contraseña actual
                 OutlinedTextField(
                     value = currentPassword,
-                    onValueChange = { currentPassword = it },
+                    onValueChange = {
+                        currentPassword = it
+                        currentPasswordError = null
+                    },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp),
+                        .fillMaxWidth(),
                     placeholder = { Text("Contraseña actual") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
+                    isError = currentPasswordError != null,
+                    supportingText = currentPasswordError?.let { error ->
+                        { Text(error) }
+                    },
                     visualTransformation = if (mostrarPasswordActual) {
                         VisualTransformation.None
                     } else {
@@ -160,13 +191,50 @@ fun ChangePasswordScreen(
                 // Nueva contraseña
                 OutlinedTextField(
                     value = newPassword,
-                    onValueChange = { newPassword = it },
+                    onValueChange = {
+                        newPassword = it
+                        newPasswordError = null
+
+                        confirmPasswordError = when {
+                            confirmPassword.isBlank() -> null
+                            confirmPassword != it -> "Las contraseñas no coinciden."
+                            else -> null
+                        }
+                    },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp),
+                        .fillMaxWidth(),
                     placeholder = { Text("Nueva contraseña") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
+                    isError = newPasswordError != null,
+                    supportingText = {
+                        Column {
+                            if (newPassword.isBlank() && newPasswordError != null) {
+                                Text("Ingresa una nueva contraseña.")
+                            } else if (newPassword.isNotEmpty()) {
+                                Text(
+                                    if (passwordLongitudValida) "✓ Entre 8 y 12 caracteres"
+                                    else "• Entre 8 y 12 caracteres"
+                                )
+                                Text(
+                                    if (passwordTieneMayuscula) "✓ Al menos una mayúscula"
+                                    else "• Al menos una mayúscula"
+                                )
+                                Text(
+                                    if (passwordTieneMinuscula) "✓ Al menos una minúscula"
+                                    else "• Al menos una minúscula"
+                                )
+                                Text(
+                                    if (passwordTieneNumero) "✓ Al menos un número"
+                                    else "• Al menos un número"
+                                )
+                                Text(
+                                    if (passwordTieneSimbolo) "✓ Al menos un símbolo"
+                                    else "• Al menos un símbolo"
+                                )
+                            }
+                        }
+                    },
                     visualTransformation = if (mostrarNuevaPassword) {
                         VisualTransformation.None
                     } else {
@@ -199,39 +267,27 @@ fun ChangePasswordScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Requisitos de contraseña
-                Column(
-                    modifier = Modifier.padding(start = 12.dp)
-                ) {
-                    Text(
-                        text = "Requisitos de contraseña:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onBackground
-                    )
-
-                    Text(
-                        text = "•  8 a 12 caracteres\n" +
-                                "•  Una mayúscula\n" +
-                                "•  Una minúscula\n" +
-                                "•  Un número\n" +
-                                "•  Un símbolo",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onBackground
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
                 // Confirmar contraseña
                 OutlinedTextField(
                     value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
+                    onValueChange = {
+                        confirmPassword = it
+
+                        confirmPasswordError = when {
+                            it.isBlank() -> null
+                            it != newPassword -> "Las contraseñas no coinciden."
+                            else -> null
+                        }
+                    },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp),
+                        .fillMaxWidth(),
                     placeholder = { Text("Confirmar contraseña") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
+                    isError = confirmPasswordError != null,
+                    supportingText = confirmPasswordError?.let { error ->
+                        { Text(error) }
+                    },
                     visualTransformation = if (mostrarConfirmarPassword) {
                         VisualTransformation.None
                     } else {
@@ -287,11 +343,38 @@ fun ChangePasswordScreen(
                 ) {
                     Button(
                         onClick = {
-                            onChangePassword(
-                                currentPassword,
-                                newPassword,
-                                confirmPassword
-                            )
+                            currentPasswordError = null
+                            newPasswordError = null
+                            confirmPasswordError = null
+
+                            if (currentPassword.isBlank()) {
+                                currentPasswordError = "Ingresa tu contraseña actual."
+                            }
+
+                            if (newPassword.isBlank()) {
+                                newPasswordError = "Ingresa una nueva contraseña."
+                            } else if (!passwordValida) {
+                                newPasswordError =
+                                    "La contraseña no cumple todos los requisitos."
+                            }
+
+                            if (confirmPassword.isBlank()) {
+                                confirmPasswordError = "Confirma tu nueva contraseña."
+                            } else if (newPassword != confirmPassword) {
+                                confirmPasswordError = "Las contraseñas no coinciden."
+                            }
+
+                            if (
+                                currentPasswordError == null &&
+                                newPasswordError == null &&
+                                confirmPasswordError == null
+                            ) {
+                                onChangePassword(
+                                    currentPassword,
+                                    newPassword,
+                                    confirmPassword
+                                )
+                            }
                         },
                         enabled = !uiState.guardando,
                         modifier = Modifier

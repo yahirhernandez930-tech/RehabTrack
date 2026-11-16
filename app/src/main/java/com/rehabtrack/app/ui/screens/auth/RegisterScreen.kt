@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,19 +59,49 @@ fun RegisterScreen(
     var showDatePicker by remember { mutableStateOf(false) }
 
     val authState by authViewModel.authState.collectAsState()
+    val correoDuplicado =
+        (authState as? AuthState.Error)?.mensaje ==
+                "Este correo electrónico ya está registrado"
 
     val passwordsMatch = password == confirmPassword
 
+    // Validación de nombre y apellidos.
+    val nombreValido = nombre.trim().matches(
+        Regex("""^[\p{L}]+(?:[ '\-’][\p{L}]+)*$""")
+    )
+
+    val apellidoPaternoValido = apellidoPaterno.trim().matches(
+        Regex("""^[\p{L}]+(?:[ '\-’][\p{L}]+)*$""")
+    )
+
+    val apellidoMaternoValido = apellidoMaterno.isBlank() ||
+            apellidoMaterno.trim().matches(
+                Regex("""^[\p{L}]+(?:[ '\-’][\p{L}]+)*$""")
+            )
+
+    // Validaciones individuales de contraseña.
+    val passwordLongitudValida = password.length in 8..12
+    val passwordTieneMayuscula = password.any { it.isUpperCase() }
+    val passwordTieneMinuscula = password.any { it.isLowerCase() }
+    val passwordTieneNumero = password.any { it.isDigit() }
+    val passwordTieneSimbolo = password.any { !it.isLetterOrDigit() }
+
     val passwordValid =
-        password.length in 8..12 &&
-                password.any { it.isUpperCase() } &&
-                password.any { it.isLowerCase() } &&
-                password.any { it.isDigit() } &&
-                password.any { !it.isLetterOrDigit() }
+        passwordLongitudValida &&
+                passwordTieneMayuscula &&
+                passwordTieneMinuscula &&
+                passwordTieneNumero &&
+                passwordTieneSimbolo
 
     val emailValid = Patterns.EMAIL_ADDRESS
         .matcher(email.trim())
         .matches()
+
+    // Validar que la fecha exista y no sea futura.
+    val fechaNacimientoValida = fechaNacimiento.isNotBlank() &&
+            runCatching {
+                !LocalDate.parse(fechaNacimiento).isAfter(LocalDate.now())
+            }.getOrDefault(false)
 
     val dateFormatter = remember {
         DateTimeFormatter.ofPattern("dd/MM/yyyy")
@@ -86,8 +117,9 @@ fun RegisterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .navigationBarsPadding()
             .imePadding()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -113,15 +145,23 @@ fun RegisterScreen(
         RehabTextField(
             value = nombre,
             onValueChange = {
-                nombre = it
+                nombre = it.take(80)
                 authViewModel.limpiarEstado()
             },
             label = "Nombre",
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (showErrors && nombre.isBlank()) {
-            ValidationMessage("El nombre es obligatorio")
+        if (showErrors) {
+            when {
+                nombre.isBlank() ->
+                    ValidationMessage("El nombre es obligatorio.")
+
+                !nombreValido ->
+                    ValidationMessage(
+                        "El nombre solo puede contener letras, espacios, apóstrofes y guiones."
+                    )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -129,25 +169,41 @@ fun RegisterScreen(
         RehabTextField(
             value = apellidoPaterno,
             onValueChange = {
-                apellidoPaterno = it
+                apellidoPaterno = it.take(80)
                 authViewModel.limpiarEstado()
             },
             label = "Apellido paterno",
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (showErrors && apellidoPaterno.isBlank()) {
-            ValidationMessage("El apellido paterno es obligatorio")
+        if (showErrors) {
+            when {
+                apellidoPaterno.isBlank() ->
+                    ValidationMessage("El apellido paterno es obligatorio.")
+
+                !apellidoPaternoValido ->
+                    ValidationMessage(
+                        "El apellido solo puede contener letras, espacios, apóstrofes y guiones."
+                    )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         RehabTextField(
             value = apellidoMaterno,
-            onValueChange = { apellidoMaterno = it },
+            onValueChange = {
+                apellidoMaterno = it.take(80)
+            },
             label = "Apellido materno (opcional)",
             modifier = Modifier.fillMaxWidth()
         )
+
+        if (showErrors && !apellidoMaternoValido) {
+            ValidationMessage(
+                "El apellido materno solo puede contener letras, espacios, apóstrofes y guiones."
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -174,8 +230,14 @@ fun RegisterScreen(
             )
         }
 
-        if (showErrors && fechaNacimiento.isBlank()) {
-            ValidationMessage("La fecha de nacimiento es obligatoria")
+        if (showErrors) {
+            when {
+                fechaNacimiento.isBlank() ->
+                    ValidationMessage("La fecha de nacimiento es obligatoria")
+
+                !fechaNacimientoValida ->
+                    ValidationMessage("La fecha de nacimiento no puede ser futura")
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -194,6 +256,10 @@ fun RegisterScreen(
             ValidationMessage("Introduce un correo electrónico válido")
         }
 
+        if (correoDuplicado) {
+            ValidationMessage("Este correo electrónico ya está registrado.")
+        }
+
         Spacer(modifier = Modifier.height(12.dp))
 
         RehabTextField(
@@ -207,10 +273,29 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (showErrors && !passwordValid) {
-            ValidationMessage(
-                "Usa 8–12 caracteres, mayúscula, minúscula, número y símbolo"
-            )
+        if (showErrors) {
+            when {
+                password.isBlank() ->
+                    ValidationMessage("La contraseña es obligatoria.")
+
+                !passwordLongitudValida && password.length < 8 ->
+                    ValidationMessage("La contraseña debe tener al menos 8 caracteres.")
+
+                !passwordLongitudValida && password.length > 12 ->
+                    ValidationMessage("La contraseña debe tener como máximo 12 caracteres.")
+
+                !passwordTieneMayuscula ->
+                    ValidationMessage("La contraseña debe incluir al menos una mayúscula.")
+
+                !passwordTieneMinuscula ->
+                    ValidationMessage("La contraseña debe incluir al menos una minúscula.")
+
+                !passwordTieneNumero ->
+                    ValidationMessage("La contraseña debe incluir al menos un número.")
+
+                !passwordTieneSimbolo ->
+                    ValidationMessage("La contraseña debe incluir al menos un símbolo.")
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -223,15 +308,23 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (showErrors && !passwordsMatch) {
-            ValidationMessage("Las contraseñas no coinciden")
+        if (showErrors) {
+            when {
+                confirmPassword.isBlank() ->
+                    ValidationMessage("Confirma tu contraseña.")
+
+                !passwordsMatch ->
+                    ValidationMessage("Las contraseñas no coinciden.")
+            }
         }
 
         // Estado de autenticación
         when (val state = authState) {
             is AuthState.Error -> {
-                Spacer(modifier = Modifier.height(12.dp))
-                ValidationMessage(state.mensaje)
+                if (!correoDuplicado) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ValidationMessage(state.mensaje)
+                }
             }
 
             AuthState.Loading -> {
@@ -254,8 +347,11 @@ fun RegisterScreen(
 
                 val formValid =
                     nombre.isNotBlank() &&
+                            nombreValido &&
                             apellidoPaterno.isNotBlank() &&
-                            fechaNacimiento.isNotBlank() &&
+                            apellidoPaternoValido &&
+                            apellidoMaternoValido &&
+                            fechaNacimientoValida &&
                             emailValid &&
                             passwordValid &&
                             passwordsMatch

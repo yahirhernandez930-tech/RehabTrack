@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.SimpleDateFormat
 import java.text.ParsePosition
@@ -50,6 +51,10 @@ import java.util.Date
 import java.util.Locale
 import com.rehabtrack.app.ui.viewmodel.AuthViewModel
 import com.rehabtrack.app.ui.viewmodel.AuthState
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.IconButton
 
 private val RegisterBlue = Color(0xFF1976D2)
 
@@ -78,6 +83,22 @@ fun RegisterPatientScreen(
     var passwordError by remember { mutableStateOf<String?>(null) }
     var confirmPasswordError by remember { mutableStateOf<String?>(null) }
 
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+    val passwordLongitudValida = password.length in 8..12
+    val passwordTieneMayuscula = password.any { it.isUpperCase() }
+    val passwordTieneMinuscula = password.any { it.isLowerCase() }
+    val passwordTieneNumero = password.any { it.isDigit() }
+    val passwordTieneSimbolo = password.any { !it.isLetterOrDigit() }
+
+    val passwordValida =
+        passwordLongitudValida &&
+                passwordTieneMayuscula &&
+                passwordTieneMinuscula &&
+                passwordTieneNumero &&
+                passwordTieneSimbolo
+
     val authState by authViewModel.authState.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -85,9 +106,21 @@ fun RegisterPatientScreen(
     }
 
     LaunchedEffect(authState) {
-        if (authState is AuthState.RegistroExitoso) {
-            authViewModel.limpiarEstado()
-            onRegisterSuccess()
+        when (val state = authState) {
+
+            AuthState.RegistroExitoso -> {
+                authViewModel.limpiarEstado()
+                onRegisterSuccess()
+            }
+
+            is AuthState.Error -> {
+                if (state.mensaje == "Este correo electrónico ya está registrado") {
+                    emailError = state.mensaje
+                    authViewModel.limpiarEstado()
+                }
+            }
+
+            else -> Unit
         }
     }
 
@@ -128,6 +161,7 @@ fun RegisterPatientScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 22.dp, vertical = 20.dp)
         ) {
@@ -152,7 +186,10 @@ fun RegisterPatientScreen(
 
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
+                onValueChange = {
+                    name = it.take(80)
+                    nameError = null
+                },
                 label = { Text("Nombre completo *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -202,7 +239,10 @@ fun RegisterPatientScreen(
 
             OutlinedTextField(
                 value = phone,
-                onValueChange = { phone = it },
+                onValueChange = {
+                    phone = it.filter { char -> char in '0'..'9' }.take(10)
+                    phoneError = null
+                },
                 label = { Text("Número de teléfono (opcional)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -210,7 +250,7 @@ fun RegisterPatientScreen(
                     keyboardType = KeyboardType.Phone
                 ),
                 isError = phoneError != null,
-                supportingText = nameError?.let { error ->
+                supportingText = phoneError?.let { error ->
                     { Text(error) }
                 }
             )
@@ -227,7 +267,17 @@ fun RegisterPatientScreen(
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = {
+                    email = it
+                    emailError = null
+
+                    if (
+                        (authState as? AuthState.Error)?.mensaje ==
+                        "Este correo electrónico ya está registrado"
+                    ) {
+                        authViewModel.limpiarEstado()
+                    }
+                },
                 label = { Text("Correo electrónico *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -235,7 +285,7 @@ fun RegisterPatientScreen(
                     keyboardType = KeyboardType.Email
                 ),
                 isError = emailError != null,
-                supportingText = nameError?.let { error ->
+                supportingText = emailError?.let { error ->
                     { Text(error) }
                 }
             )
@@ -244,14 +294,68 @@ fun RegisterPatientScreen(
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    passwordError = null
+                    confirmPasswordError = null
+                },
                 label = { Text("Contraseña *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            passwordVisible = !passwordVisible
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (passwordVisible) {
+                                Icons.Default.Visibility
+                            } else {
+                                Icons.Default.VisibilityOff
+                            },
+                            contentDescription = if (passwordVisible) {
+                                "Ocultar contraseña"
+                            } else {
+                                "Mostrar contraseña"
+                            },
+                            tint = Color(0xFF64748B)
+                        )
+                    }
+                },
                 isError = passwordError != null,
-                supportingText = nameError?.let { error ->
-                    { Text(error) }
+                supportingText = {
+                    Column {
+                        if (password.isBlank() && passwordError != null) {
+                            Text("Ingresa una contraseña.")
+                        } else if (password.isNotEmpty()) {
+                            Text(
+                                if (passwordLongitudValida) "✓ Entre 8 y 12 caracteres"
+                                else "• Entre 8 y 12 caracteres"
+                            )
+                            Text(
+                                if (passwordTieneMayuscula) "✓ Al menos una mayúscula"
+                                else "• Al menos una mayúscula"
+                            )
+                            Text(
+                                if (passwordTieneMinuscula) "✓ Al menos una minúscula"
+                                else "• Al menos una minúscula"
+                            )
+                            Text(
+                                if (passwordTieneNumero) "✓ Al menos un número"
+                                else "• Al menos un número"
+                            )
+                            Text(
+                                if (passwordTieneSimbolo) "✓ Al menos un símbolo"
+                                else "• Al menos un símbolo"
+                            )
+                        }
+                    }
                 }
             )
 
@@ -259,13 +363,46 @@ fun RegisterPatientScreen(
 
             OutlinedTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                onValueChange = {
+                    confirmPassword = it
+
+                    confirmPasswordError = when {
+                        it.isBlank() -> null
+                        it != password -> "Las contraseñas no coinciden."
+                        else -> null
+                    }
+                },
                 label = { Text("Confirmar contraseña *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (confirmPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            confirmPasswordVisible = !confirmPasswordVisible
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (confirmPasswordVisible) {
+                                Icons.Default.Visibility
+                            } else {
+                                Icons.Default.VisibilityOff
+                            },
+                            contentDescription = if (confirmPasswordVisible) {
+                                "Ocultar contraseña"
+                            } else {
+                                "Mostrar contraseña"
+                            },
+                            tint = Color(0xFF64748B)
+                        )
+                    }
+                },
                 isError = confirmPasswordError != null,
-                supportingText = nameError?.let { error ->
+                supportingText = confirmPasswordError?.let { error ->
                     { Text(error) }
                 }
             )
@@ -301,9 +438,15 @@ fun RegisterPatientScreen(
                     passwordError = null
                     confirmPasswordError = null
 
-                    // Validar nombre
+                    // Validar nombre completo
+                    val nombreValido = Regex(
+                        """^[\p{L}]+(?:[ '\-’][\p{L}]+)*$"""
+                    )
+
                     if (name.isBlank()) {
                         nameError = "Ingresa el nombre completo."
+                    } else if (!nombreValido.matches(name.trim())) {
+                        nameError = "Ingresa un nombre válido. Usa únicamente letras, espacios y guiones."
                     }
 
                     // Validar fecha de nacimiento
@@ -314,12 +457,8 @@ fun RegisterPatientScreen(
                     }
 
                     // Validar teléfono únicamente si se proporcionó
-                    val digits = phone.filter { it.isDigit() }
-
-                    if (phone.isNotBlank() &&
-                        (digits.length != 10 || !phone.matches(Regex("""^[\d\s()+-]+$""")))
-                    ) {
-                        phoneError = "Ingresa un teléfono válido de 10 dígitos."
+                    if (phone.isNotBlank() && phone.length != 10) {
+                        phoneError = "El teléfono debe contener exactamente 10 dígitos."
                     }
 
                     // Validar correo electrónico
@@ -332,18 +471,10 @@ fun RegisterPatientScreen(
                     }
 
                     // Validar contraseña
-                    val passwordValida =
-                        password.length in 8..12 &&
-                                password.any { it.isUpperCase() } &&
-                                password.any { it.isLowerCase() } &&
-                                password.any { it.isDigit() } &&
-                                password.any { !it.isLetterOrDigit() }
-
                     if (password.isBlank()) {
                         passwordError = "Ingresa una contraseña."
                     } else if (!passwordValida) {
-                        passwordError =
-                            "Usa 8–12 caracteres, mayúscula, minúscula, número y símbolo."
+                        passwordError = "La contraseña no cumple todos los requisitos."
                     }
 
                     // Validar confirmación

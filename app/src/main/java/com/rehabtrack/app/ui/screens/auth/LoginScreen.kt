@@ -32,6 +32,7 @@ import com.rehabtrack.app.navigation.Routes
 import com.rehabtrack.app.ui.components.RehabTextField
 import com.rehabtrack.app.ui.viewmodel.AuthState
 import com.rehabtrack.app.ui.viewmodel.AuthViewModel
+import android.util.Patterns
 
 @Composable
 fun LoginScreen(
@@ -45,6 +46,9 @@ fun LoginScreen(
     var passwordError by remember { mutableStateOf(false) }
 
     val authState by authViewModel.authState.collectAsState()
+    val emailValid = Patterns.EMAIL_ADDRESS
+        .matcher(email.trim())
+        .matches()
 
     // Navegación según el rol autenticado.
     LaunchedEffect(authState) {
@@ -115,7 +119,15 @@ fun LoginScreen(
 
         if (emailError) {
             Text(
-                text = "El correo electrónico es obligatorio",
+                text = when {
+                    email.isBlank() ->
+                        "El correo electrónico es obligatorio."
+
+                    !emailValid ->
+                        "Introduce un correo electrónico válido."
+
+                    else -> ""
+                },
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier
@@ -179,7 +191,7 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                emailError = email.isBlank()
+                emailError = email.isBlank() || !emailValid
                 passwordError = password.isBlank()
 
                 if (!emailError && !passwordError) {
