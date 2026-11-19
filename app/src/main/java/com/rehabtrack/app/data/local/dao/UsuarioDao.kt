@@ -23,4 +23,7 @@ interface UsuarioDao {
 
     @Query("SELECT COUNT(*) FROM usuarios WHERE rol = 'ADMINISTRADOR'")
     suspend fun contarAdministradores(): Int
+
+    @Query("DELETE FROM usuarios WHERE idUsuario = :id")
+    suspend fun eliminarPorId(id: Int)
 }

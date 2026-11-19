@@ -2,7 +2,6 @@ package com.rehabtrack.app.ui.screens.physiotherapist
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,13 +23,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -60,14 +56,16 @@ import androidx.navigation.NavController
 import com.rehabtrack.app.navigation.Routes
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rehabtrack.app.ui.viewmodel.ManageProgramViewModel
-import com.rehabtrack.app.ui.viewmodel.ManageProgramUiState
 import com.rehabtrack.app.ui.viewmodel.EjercicioAsignadoData
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 
 private val ProgramBlue = Color(0xFF1976D2)
 private val ProgramText = Color(0xFF263238)
 private val ProgramSecondary = Color(0xFF64748B)
 private val ProgramBorder = Color(0xFFCBD5E1)
 private val ProgramField = Color(0xFFF1F5F9)
+private const val MAX_SESIONES = 50
 
 private data class AssignedExercise(
     val name: String,
@@ -119,8 +117,27 @@ fun ManageProgramScreen(
         mutableStateOf("Rehabilitación de rodilla")
     }
 
-    var duration by remember { mutableIntStateOf(12) }
-    var durationMenuExpanded by remember { mutableStateOf(false) }
+    var duration by rememberSaveable { mutableStateOf("12") }
+
+    var durationTouched by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    val durationError = when {
+        duration.isBlank() ->
+            "Este campo es obligatorio."
+
+        duration.toIntOrNull() == null ->
+            "Introduce un número entero válido."
+
+        duration.toInt() < 1 ->
+            "El mínimo permitido es 1 sesión."
+
+        duration.toInt() > MAX_SESIONES ->
+            "El máximo permitido es $MAX_SESIONES sesiones."
+
+        else -> null
+    }
 
     var datosInicialesCargados by rememberSaveable {
         mutableStateOf(false)
@@ -150,7 +167,7 @@ fun ManageProgramScreen(
 
                 // Recuperar información del programa.
                 programName = programa.nombre
-                duration = programa.duracionSesiones
+                duration = programa.duracionSesiones.toString()
 
                 // Recuperar ejercicios y sus configuraciones.
                 exercises.clear()
@@ -339,57 +356,40 @@ fun ManageProgramScreen(
 
                 FormLabel("Duración del programa")
 
-                Column(
+                OutlinedTextField(
+                    value = duration,
+                    onValueChange = { value ->
+                        duration = value.filter(Char::isDigit)
+                        durationTouched = true
+                        validationMessage = ""
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 7.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
-                            .border(
-                                1.dp,
-                                ProgramBorder,
-                                RoundedCornerShape(9.dp)
+                        .padding(top = 7.dp),
+                    singleLine = true,
+                    label = {
+                        Text("Número de sesiones")
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number
+                    ),
+                    isError = durationTouched && durationError != null,
+                    supportingText = {
+                        if (durationTouched && durationError != null) {
+                            Text(
+                                text = durationError,
+                                color = Color(0xFFD32F2F)
                             )
-                            .clickable {
-                                durationMenuExpanded = true
-                            }
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "$duration sesiones",
-                            color = ProgramText,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Seleccionar duración",
-                            tint = ProgramSecondary
-                        )
-
-                        DropdownMenu(
-                            expanded = durationMenuExpanded,
-                            onDismissRequest = {
-                                durationMenuExpanded = false
-                            }
-                        ) {
-                            listOf(4, 6, 8, 10, 12, 16, 20).forEach { sessions ->
-                                DropdownMenuItem(
-                                    text = { Text("$sessions sesiones") },
-                                    onClick = {
-                                        duration = sessions
-                                        durationMenuExpanded = false
-                                    }
-                                )
-                            }
+                        } else {
+                            Text("Introduce entre 1 y $MAX_SESIONES sesiones.")
                         }
-                    }
-                }
+                    },
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 14.sp,
+                        color = ProgramText
+                    ),
+                    shape = RoundedCornerShape(9.dp)
+                )
 
                 Spacer(Modifier.height(23.dp))
 
@@ -465,6 +465,11 @@ fun ManageProgramScreen(
 
                             exercises.isEmpty() ->
                                 "Agrega al menos un ejercicio."
+
+                            durationError != null -> {
+                                durationTouched = true
+                                durationError
+                            }
 
                             uiState.nombrePaciente.isBlank() ->
                                 "No se puede guardar porque el paciente no está disponible."
@@ -708,7 +713,7 @@ fun ManageProgramScreen(
                                 idUsuario = idUsuario,
                                 idPaciente = idPaciente,
                                 nombrePrograma = programName,
-                                duracionSesiones = duration,
+                                duracionSesiones = duration.toInt(),
                                 ejercicios = exercises.map { exercise ->
                                     EjercicioAsignadoData(
                                         nombre = exercise.name,

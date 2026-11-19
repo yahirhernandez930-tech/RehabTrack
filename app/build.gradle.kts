@@ -68,4 +68,6 @@ dependencies {
     // Media3 - Reproducción de videos demostrativos
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
+
+    androidTestImplementation(libs.androidx.room.testing)
 }
