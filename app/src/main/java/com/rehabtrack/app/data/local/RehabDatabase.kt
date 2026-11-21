@@ -276,5 +276,12 @@ abstract class RehabDatabase : RoomDatabase() {
                 instance
             }
         }
+
+        fun cerrarDatabase() {
+            synchronized(this) {
+                INSTANCE?.close()
+                INSTANCE = null
+            }
+        }
     }
 }

@@ -15,8 +15,11 @@ import com.rehabtrack.app.ui.theme.RehabTrackTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.Text
+import com.rehabtrack.app.util.BackupManager
 
 class MainActivity : ComponentActivity() {
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,25 +34,57 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
 
+            var errorRestauracion: String? = null
+
+            // 1. Resolver cualquier restauración interrumpida.
             try {
                 withContext(Dispatchers.IO) {
-                    DebugAccountInitializer
-                        .crearCuentaFisioterapeuta(applicationContext)
+                    BackupManager.verificarRestauracionPendiente(
+                        applicationContext
+                    )
                 }
             } catch (e: Exception) {
                 Log.e(
                     "RehabTrack",
-                    "Error al inicializar la cuenta de prueba",
+                    "No se pudo verificar o recuperar la restauración",
                     e
                 )
+
+                errorRestauracion =
+                    "No se pudo completar la verificación de los datos. " +
+                            "La aplicación no continuará para proteger tu información. " +
+                            "Conserva los archivos de recuperación."
             }
 
+            // 2. Inicializar la cuenta de prueba únicamente si no hubo errores.
+            if (errorRestauracion == null) {
+                try {
+                    withContext(Dispatchers.IO) {
+                        DebugAccountInitializer
+                            .crearCuentaFisioterapeuta(applicationContext)
+                    }
+                } catch (e: Exception) {
+                    Log.e(
+                        "RehabTrack",
+                        "Error al inicializar la cuenta de prueba",
+                        e
+                    )
+                }
+            }
+
+            // 3. Mostrar la aplicación o bloquear el acceso si falló la recuperación.
             setContent {
                 RehabTrackTheme {
                     Surface(
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        AppNavigation()
+                        if (errorRestauracion != null) {
+                            Text(
+                                text = errorRestauracion!!
+                            )
+                        } else {
+                            AppNavigation()
+                        }
                     }
                 }
             }

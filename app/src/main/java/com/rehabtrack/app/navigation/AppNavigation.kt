@@ -56,6 +56,7 @@ import com.rehabtrack.app.ui.screens.admin.AdminHomeScreen
 import com.rehabtrack.app.ui.screens.admin.RegisterPhysiotherapistScreen
 import com.rehabtrack.app.ui.screens.admin.AdminSetupScreen
 import com.rehabtrack.app.ui.viewmodel.AuthViewModel
+import com.rehabtrack.app.ui.screens.admin.BackupScreen
 
 @Composable
 fun AppNavigation() {
@@ -619,6 +620,14 @@ fun AppNavigation() {
             }
         }
 
+        composable("backup") {
+            BackupScreen(
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
         composable("${Routes.AdminHome.route}/{idUsuario}") { backStackEntry ->
 
             val idUsuario = backStackEntry.arguments
@@ -633,6 +642,10 @@ fun AppNavigation() {
                         navController.navigate(
                             "${Routes.RegisterPhysiotherapist.route}/$idUsuario"
                         )
+                    },
+
+                    onBackupClick = {
+                        navController.navigate("backup")
                     },
 
                     onLogout = {

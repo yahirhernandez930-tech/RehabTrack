@@ -40,6 +40,7 @@ private val RehabRed = Color(0xFFD32F2F)
 fun AdminHomeScreen(
     idUsuario: Int,
     onRegisterPhysiotherapistClick: () -> Unit,
+    onBackupClick: () -> Unit,
     onLogout: () -> Unit
 ) {
 
@@ -159,6 +160,61 @@ fun AdminHomeScreen(
                         ) {
                             Text(
                                 text = "Registrar fisioterapeuta",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Acceso a copias de seguridad
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onBackupClick),
+                    shape = RoundedCornerShape(14.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        RehabBorder
+                    ),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
+                    ) {
+                        Text(
+                            text = "Copias de seguridad",
+                            color = RehabText,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Genera respaldos para proteger y recuperar la información de RehabTrack.",
+                            color = RehabSecondary,
+                            fontSize = 13.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Button(
+                            onClick = onBackupClick,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RehabBlue,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = "Administrar respaldos",
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
